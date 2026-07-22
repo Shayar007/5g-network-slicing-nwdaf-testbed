@@ -1,0 +1,1 @@
+# 5g-network-slicing-nwdaf-testbed
