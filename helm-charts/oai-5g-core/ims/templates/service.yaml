@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: MIT
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ims
+  labels:
+    app: {{ .Release.Name }}
+    {{- include "ims.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    {{- include "ims.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: ims
+      # Port accessible outside cluster
+      port: 5060
+      # Port to forward to inside the pod
+      targetPort: 5060
+      protocol: UDP

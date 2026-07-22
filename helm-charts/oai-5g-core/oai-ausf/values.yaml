@@ -1,0 +1,76 @@
+# SPDX-License-Identifier: MIT
+
+# Kubernetes distribution selector
+# - "Vanilla"   → Community Kubernetes
+# - "Openshift" → Red Hat OpenShift (requires UBI images)
+kubernetesDistribution: Vanilla  
+
+# ausf container image configuration
+nfimage:
+  repository: docker.io/oaisoftwarealliance/oai-ausf
+  version: v2.2.0       # Image tag (or "develop" for latest dev build)
+  pullPolicy: IfNotPresent  # Options: IfNotPresent, Always, Never
+
+# Image pull secrets (useful for private registries or DockerHub rate limits)
+# imagePullSecrets:
+#  - name: "regcred"
+
+# Service account configuration
+serviceAccount:
+  create: true
+  annotations: {}
+
+exposedPorts:
+  sbi: 80
+
+podSecurityContext:
+  runAsUser: 0
+  runAsGroup: 0
+
+start:
+  ausf: true      # If false → NF container sleeps (for manual debugging)
+  tcpdump: false  # Enable tcpdump container inside pod
+
+includeTcpDumpContainer: false  # If true, add tcpdump sidecar for debugging
+
+# Tcpdump sidecar image (if enabled)
+tcpdumpimage:
+  repository: docker.io/oaisoftwarealliance/oai-tcpdump-init
+  version: alpine-3.20
+  pullPolicy: IfNotPresent
+
+#To store PCAP of NF in a sharedVolume so it can be easily fetched (PVC is created with NRF charts so make sure in NRF it is true)
+persistent:
+  sharedvolume: false
+
+# Resource requests and limits
+# See: 
+# https://kubernetes.io/docs/concepts/configuration/manage-resources-containers
+# https://kubernetes.io/docs/concepts/workloads/pods/pod-qos
+resources:
+  define: false
+  limits:
+    nf:
+      cpu: 100m
+      memory: 128Mi
+    #If tcpdump container is disabled this value will not be used
+    tcpdump:
+      cpu: 100m
+      memory: 128Mi
+  requests:
+    nf:
+      cpu: 100m
+      memory: 128Mi
+    #If tcpdump container is disabled this value will not be used
+    tcpdump:
+      cpu: 100m
+      memory: 128Mi
+
+readinessProbe: true
+livenessProbe: false
+
+# Scheduling options
+affinity: {}
+terminationGracePeriodSeconds: 5
+nodeSelector: {}
+nodeName:

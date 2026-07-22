@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: MIT
+
+apiVersion: v2
+name: oai-upf
+description: A Helm chart for UPF as network function
+
+type: application
+
+icon: http://www.openairinterface.org/wp-content/uploads/2015/06/cropped-oai_final_logo.png
+
+version: v2.2.0
+appVersion: develop
+
+keywords:
+  - 5G
+  - UPF
+
+sources:
+  - https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-fed
+  - https://openairinterface.org/
+
+maintainers:
+  - name:  OPENAIRINTERFACE
+    email: oaicicdteam@openairinterface.org

@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: MIT
+
+# Kubernetes distribution selector
+# - "Vanilla"   → Community Kubernetes
+# - "Openshift" → Red Hat OpenShift (requires UBI images)
+kubernetesDistribution: Vanilla
+
+# Image pull secrets (useful for private registries or DockerHub rate limits)
+# imagePullSecrets:
+#  - name: "regcred"
+
+imsUsers:
+  - id: "001010000000100"
+    fullname: tom
+    hassip: yes
+    context: users
+    host: dynamic
+    transport: tcp,udp
+
+  - id: "001010000000101"
+    fullname: harry
+    hassip: yes
+    context: users
+    host: dynamic
+    transport: tcp,udp
+
+# Pod security context
+podSecurityContext:
+  runAsUser: 0
+  runAsGroup: 0
+
+securityContext:
+  runAsUser: 0
+  runAsGroup: 0
+  capabilities:
+    drop:
+      - ALL
+    add:
+      - SYS_NICE
+      - NET_BIND_SERVICE
+      - NET_RAW
+      - DAC_OVERRIDE
+      - DAC_READ_SEARCH
+
+affinity: {}
+terminationGracePeriodSeconds: 5
+nodeSelector: {}
+nodeName:

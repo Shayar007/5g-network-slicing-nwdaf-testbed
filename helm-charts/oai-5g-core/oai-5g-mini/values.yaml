@@ -1,0 +1,170 @@
+# SPDX-License-Identifier: MIT
+
+global:
+  kubernetesDistribution: Vanilla #Openshift/Vanilla Vanilla for Upstream Kubernetes
+  coreNetworkConfigMap: oai-5g-mini
+  clusterIpServiceIpAllocation: true #this will allocate ip-address to cluster Ip service
+  waitForNRF: true
+  waitForUDR: false
+  http2Param: "--http2-prior-knowledge"  # if waitForNRF is true and http2 is used for all NF then this param is needed
+  timeout: 1
+  imagePullSecrets:
+  - &secret
+    name: "regcred"
+mysql:
+  enabled: true
+  imagePullPolicy: IfNotPresent
+  oai5gdatabase: mini
+  imagePullSecrets:
+    - *secret
+  persistence:
+    enabled: false
+oai-nrf:
+  enabled: true
+  nfimage:  # image name either locally present or in a public/private repository
+    repository: docker.io/oaisoftwarealliance/oai-nrf           ## The image will be pulled from dockerhub
+    version: v2.2.0                                    ## The branch to be used to pull from dockerhub
+    # pullPolicy: IfNotPresent or Never or Always
+    pullPolicy: IfNotPresent
+  includeTcpDumpContainer: false #only for taking pcaps inside network function pod
+  imagePullSecrets:
+    - *secret
+  config:
+    logLevel: "debug"   #allowed info/error/debug
+  nodeSelector: {}
+oai-amf:
+  enabled: true
+  nfimage:  # image name either locally present or in a public/private repository
+    repository: docker.io/oaisoftwarealliance/oai-amf           ## The image will be pulled from dockerhub
+    version: v2.2.0                                    ## The branch to be used to pull from dockerhub
+    # pullPolicy: IfNotPresent or Never or Always
+    pullPolicy: IfNotPresent
+  includeTcpDumpContainer: false #only for taking pcaps inside network function pod
+  imagePullSecrets:
+    - *secret
+  nodeSelector: {}
+  multus:
+    ## If you don't want to add a default route in your pod then replace this field with ""
+    enabled: false
+    interfaces:
+      - name: "n2"
+        hostInterface: "eth0"
+        ipAdd: "172.21.6.90"
+        netmask: "22"
+        routes: ""
+        defaultRoute: "172.21.7.254"
+        enabled: true
+      - name: "sbi"
+        hostInterface: "eth0"
+        ipAdd: "172.21.8.91"
+        netmask: "22"
+        gateway: "172.21.11.254"
+        enabled: true
+oai-upf:
+  enabled: true
+  nfimage:  # image name either locally present or in a public/private repository
+    repository: docker.io/oaisoftwarealliance/oai-upf    ## The image will be pulled from dockerhub
+    version: v2.2.0                                    ## The branch to be used to pull from dockerhub
+    # pullPolicy: IfNotPresent or Never or Always
+    pullPolicy: IfNotPresent
+  includeTcpDumpContainer: false #only for taking pcaps inside network function pod
+  imagePullSecrets:
+    - *secret
+  nodeSelector: {}
+  multus:
+    ## If you don't want to add a default route in your pod then replace this field with ""
+    enabled: false
+    interfaces:
+      - name: "n3"
+        hostInterface: "eth0"
+        ipAdd: "172.21.12.95"
+        netmask: "22"
+        defaultRoute: "172.21.7.254"
+        enabled: true
+      - name: "n4"
+        hostInterface: "eth0"
+        ipAdd: "192.168.24.2"
+        netmask: "24"
+        enabled: true
+      - name: "n6"
+        hostInterface: "eth0"
+        ipAdd: "192.168.22.2"
+        netmask: "24"
+        enabled: true
+      - name: "n9"
+        hostInterface: "eth0"
+        ipAdd: "192.168.23.2"
+        netmask: "24"
+        enabled: false
+      - name: "sbi"
+        hostInterface: "eth0"
+        ipAdd: "172.21.8.91"
+        netmask: "22"
+        gateway: "172.21.11.254"
+        enabled: true
+  #NOTE: If the interface you selected for n6If is wrong then traffic will not be routed towards internet
+oai-traffic-server:
+  enabled: true
+  nfimage:
+    repository: docker.io/oaisoftwarealliance/trf-gen-cn5g
+    version: latest       # Image tag (or "v2.2.0" for latest dev build)
+    pullPolicy: IfNotPresent  # Options: IfNotPresent, Always, Never
+  imagePullSecrets:
+    - *secret
+  multus:
+    ## If you don't want to add a default route in your pod then replace this field with ""
+    enabled: false
+    interfaces:
+      - name: "external"
+        hostInterface: "eth0"
+        ipAdd: "172.21.6.99"
+        netmask: "22"
+        defaultRoute: "172.21.7.254"
+        enabled: true
+  config:
+    ueroute: 12.1.1.0/24
+    upfHost: oai-upf
+    noOfIperf3Server: 2
+  resources:
+    define: false
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  nodeSelector: {}
+  nodeName: ""
+oai-smf:
+  enabled: true
+  nfimage:  # image name either locally present or in a public/private repository
+    repository: docker.io/oaisoftwarealliance/oai-smf           ## The image will be pulled from dockerhub
+    version: v2.2.0                         ## The branch to be used to pull from dockerhub
+    # pullPolicy: IfNotPresent or Never or Always
+    pullPolicy: IfNotPresent
+  includeTcpDumpContainer: false #only for taking pcaps inside network function pod
+  ## Only if you want to store all pcaps in persistent volume
+  persistent:
+    sharedvolume: false
+  start:
+    smf: true #If false the network function container will run in sleep mode for manually testing
+    tcpdump: false
+  imagePullSecrets:
+    - *secret
+  nodeSelector: {}
+  multus:
+    ## If you don't want to add a default route in your pod then replace this field with ""
+    enabled: false
+    interfaces:
+      - name: "n4"
+        hostInterface: "eth0"
+        ipAdd: "192.168.24.3"
+        netmask: "24"
+        defaultRoute: ""
+        enabled: true
+      - name: "sbi"
+        hostInterface: "eth0"
+        ipAdd: "172.21.8.92"
+        netmask: "22"
+        gateway: "172.21.11.254"
+        enabled: true

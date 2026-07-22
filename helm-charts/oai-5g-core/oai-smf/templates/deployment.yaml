@@ -1,0 +1,225 @@
+# SPDX-License-Identifier: MIT
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}
+  labels:
+    app: {{ .Release.Name }}
+    {{- include "oai-smf.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "oai-smf.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+        {{- include "oai-smf.selectorLabels" . | nindent 8 }}
+    {{- if and .Values.multus.enabled .Values.multus.interfaces }}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |-
+          [
+          {{- $first := true }}
+          {{- range .Values.multus.interfaces }}
+          {{- if .enabled }}
+            {{- if not $first }},{{- end }}
+            {
+              "name": "{{ $.Release.Name }}-{{ .name }}",
+              {{- if .mac }},
+              "mac": "{{ .mac }}"
+              {{- end }}
+              "interface": "{{ .name }}"
+              {{- if .defaultRoute }},
+              "default-route": ["{{ .defaultRoute }}"]
+              {{- end }}
+              {{- if .gateway }},
+              "gateway": "{{ .gateway }}"
+              {{- end }}
+            }
+            {{- $first = false }}
+          {{- end }}
+          {{- end }}
+          ]
+    {{- end }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+    {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{ toYaml .Values.imagePullSecrets | indent 8 }}
+    {{- end }}
+    {{- if and (hasKey .Values "config") (hasKey .Values.config "imsHost") }}
+      initContainers:
+        - name: config-patcher
+          image: docker.io/mikefarah/yq:4.47.2
+          command: [ "sh", "-c" ]
+          args:
+            - |
+              set -e
+              echo "Resolving hostnames and patching config..."
+              cp /tmp/config/config.yaml /tmp/config_patch/config.yaml
+              for i in $(seq 1 $MAX_RETRIES); do
+                echo "$IMS_HOST" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$' && { export IMS_IP="$IMS_HOST"; break; }
+                IMS_IP=$(getent hosts "$IMS_HOST" | awk '{print $1}')
+                if [ -n "$IMS_IP" ]; then
+                  echo "Resolved IMS_IP=$IMS_IP"
+                  export IMS_IP
+                  break
+                fi
+                echo "[$i/$MAX_RETRIES] Waiting for $IMS_HOST to resolve..."
+                sleep $SLEEP_TIME
+              done
+              yq -i '.smf.ims.pcscf_ipv4 = strenv(IMS_IP)' /tmp/config_patch/config.yaml
+              cat /tmp/config_patch/config.yaml
+          volumeMounts:
+            - name: shared-data
+              mountPath: /tmp/config_patch
+            - name: configuration
+              mountPath: /tmp/config
+          env:
+            ## For resolving the hostname
+            - name: MAX_RETRIES
+              value: "60"
+            - name: SLEEP_TIME
+              value: "2"
+            - name: IMS_HOST
+              value: "{{ .Values.config.imsHost }}"
+          resources:
+            requests:
+              memory: 50Mi
+              cpu: 1m
+            limits:
+              memory: 50Mi
+              cpu: 1m
+    {{- end }}
+    {{- if .Values.global }}{{ if .Values.global.waitForNRF }}
+        - name: init
+          image: docker.io/oaisoftwarealliance/oai-tcpdump-init:alpine-3.20
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - until curl --connect-timeout {{ .Values.global.timeout }} --head -X GET http://oai-nrf/nnrf-nfm/v1/nf-instances?nf-type='NRF' {{ .Values.global.http2Param }}; do echo waiting for oai-nrf; sleep 1; done
+          resources:
+            requests:
+              memory: 50Mi
+              cpu: 1m
+            limits:
+              memory: 50Mi
+              cpu: 1m
+    {{- end }}{{ end }}
+      containers:
+    {{- if .Values.includeTcpDumpContainer }}
+      - name: tcpdump
+        image: "{{ .Values.tcpdumpimage.repository }}:{{ .Values.tcpdumpimage.version }}"
+        imagePullPolicy: {{ .Values.tcpdumpimage.pullPolicy }}
+        {{- if .Values.resources.define }}
+        resources:
+          requests:
+            memory: {{ .Values.resources.requests.tcpdump.memory | quote }}
+            cpu: {{ .Values.resources.requests.tcpdump.cpu | quote }}
+          limits:
+            memory: {{ .Values.resources.limits.tcpdump.memory | quote }}
+            cpu: {{ .Values.resources.limits.tcpdump.cpu | quote }}
+        {{- end }}
+        securityContext:
+           privileged: true
+           capabilities:
+              add:
+               - NET_ADMIN
+              drop:
+               - ALL
+        {{- if .Values.start.tcpdump }}
+        command:
+          - /bin/sh
+          - -c
+          - /usr/bin/tcpdump -i any -w /tmp/pcap/{{ .Chart.Name }}_`date +%Y-%m-%d_%H_%M-%S-%Z`.pcap
+        {{- else}}
+        command:
+          - /bin/sleep
+          - infinity
+        {{- end}}
+        {{- if .Values.includeTcpDumpContainer}}
+        {{- if .Values.persistent.sharedvolume}}
+        volumeMounts:
+        - mountPath: "/tmp/pcap"
+          name: cn5g-pvc
+        {{- end }}
+        {{- end }}
+    {{- end }}
+      - name: smf
+        image: "{{ .Values.nfimage.repository }}:{{ .Values.nfimage.version }}"
+        imagePullPolicy: {{ .Values.nfimage.pullPolicy }}
+        volumeMounts:
+          - mountPath: /openair-smf/etc
+            name: shared-data
+        {{- if .Values.readinessProbe }}
+        readinessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - /openair-smf/bin/healthcheck.sh
+          initialDelaySeconds: 2
+          periodSeconds: 3
+        {{- end }}
+        {{- if .Values.livenessProbe }}
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - /openair-smf/bin/healthcheck.sh
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        {{- end}}
+        ports:
+        - containerPort: {{ .Values.exposedPorts.n4 }}
+          name: oai-smf
+        - containerPort: {{ .Values.exposedPorts.sbi }}
+          name: http
+        {{- if .Values.resources.define}}
+        resources:
+          requests:
+            memory: {{ .Values.resources.requests.nf.memory | quote }}
+            cpu: {{ .Values.resources.requests.nf.cpu | quote }}
+          limits:
+            memory: {{ .Values.resources.limits.nf.memory | quote }}
+            cpu: {{ .Values.resources.limits.nf.cpu | quote }}
+        {{- end}}
+        {{- if .Values.start.smf}}
+        {{- else}}
+        command:
+          - /bin/sleep
+          - infinity
+        {{- end}}
+      volumes:
+      - configMap:
+      {{- if .Values.global }}
+          name: {{ .Values.global.coreNetworkConfigMap }}
+      {{- else }}
+          name: {{ .Chart.Name }}-configmap
+      {{- end }}
+        name: configuration
+      - name: shared-data
+        emptyDir: {}
+      {{- if .Values.includeTcpDumpContainer }}
+      {{- if .Values.persistent.sharedvolume }}
+      - name: cn5g-pvc
+        persistentVolumeClaim:
+          claimName: cn5g-pvc
+      {{- end }}
+      {{- end }}
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      serviceAccountName: {{ .Chart.Name }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- if .Values.nodeSelector}}
+      nodeSelector: 
+         {{- toYaml .Values.nodeSelector | nindent 12 }}
+      {{- end }}
+      {{- if .Values.nodeName }}
+      nodeName: {{ .Values.nodeName }}
+      {{- end }}

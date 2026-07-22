@@ -1,0 +1,90 @@
+# SPDX-License-Identifier: MIT
+
+# - "Vanilla"   → Community Kubernetes
+# - "Openshift" → Red Hat OpenShift (requires UBI images)
+kubernetesDistribution: Vanilla  
+
+# Control if the charts will be deployed or not
+enabled: true
+
+# amf container image configuration
+nfimage:
+  repository: docker.io/oaisoftwarealliance/trf-gen-cn5g
+  version: latest       # Image tag (or "develop" for latest dev build)
+  pullPolicy: IfNotPresent  # Options: IfNotPresent, Always, Never
+
+# Image pull secrets (useful for private registries or DockerHub rate limits)
+# imagePullSecrets:
+#  - name: "regcred"
+
+# Service account configuration
+serviceAccount:
+  create: true
+  annotations: {}
+
+exposedPorts:
+  n4: 8805
+  sbi: 80
+
+podSecurityContext:
+  runAsUser: 0
+  runAsGroup: 0
+
+# Service type is fixed to ClusterIP (only for non-Multus interfaces, i.e., eth0)
+
+# ───────────────────────────────────────────────
+# Supported deployment modes:
+# 1. N4 and SBI can share the same virtual interface (optional).
+# 2. There can be only one entry of defaultRoute
+#
+# Note:  
+# - Adapt the IP addresses to your lab environment.
+# ───────────────────────────────────────────────
+
+# If a particular interface is commented then it won't be created and instead of it eth0 will be used. 
+
+multus:
+  enabled: false
+  interfaces:
+    - name: "external"
+      hostInterface: "eth0"
+      ipAdd: "172.21.6.99"
+      netmask: "22"
+      defaultRoute: "172.21.7.254"
+      enabled: true
+
+config:
+  ueroute: 12.1.1.0/24
+  upfHost: 172.21.6.95
+  noOfIperf3Server: 10
+
+securityContext:
+ capabilities:
+    add:
+     - NET_ADMIN
+     - NET_RAW
+    drop:
+     - ALL
+
+# Resource requests and limits
+# See: 
+# https://kubernetes.io/docs/concepts/configuration/manage-resources-containers
+# https://kubernetes.io/docs/concepts/workloads/pods/pod-qos
+
+resources:
+  define: false
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+readinessProbe: true
+livenessProbe: false
+
+# Scheduling options
+affinity: {}
+terminationGracePeriodSeconds: 5
+nodeSelector: {}
+nodeName:

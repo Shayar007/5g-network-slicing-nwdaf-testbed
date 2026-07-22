@@ -1,0 +1,36 @@
+dependencies:
+- name: mysql
+  repository: file://../mysql
+  version: 9.0.1
+- name: oai-nrf
+  repository: file://../oai-nrf
+  version: v2.2.0
+- name: oai-udr
+  repository: file://../oai-udr
+  version: v2.2.0
+- name: oai-udm
+  repository: file://../oai-udm
+  version: v2.2.0
+- name: oai-ausf
+  repository: file://../oai-ausf
+  version: v2.2.0
+- name: oai-amf
+  repository: file://../oai-amf
+  version: v2.2.0
+- name: oai-smf
+  repository: file://../oai-smf
+  version: v2.2.0
+- name: oai-upf
+  repository: file://../oai-upf
+  version: v2.2.0
+- name: oai-lmf
+  repository: file://../oai-lmf
+  version: v2.2.0
+- name: oai-traffic-server
+  repository: file://../oai-traffic-server
+  version: v2.2
+- name: ims
+  repository: file://../ims
+  version: 20.6.0
+digest: sha256:61864bcaaaf3385f399ef4eca4f25c8b165414665cfc3e42d29341a1bb2c4832
+generated: "2026-04-13T12:41:04.549715593+05:30"

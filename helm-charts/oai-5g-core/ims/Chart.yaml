@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: MIT
+
+apiVersion: v2
+name: ims
+description: Helm chart for Asterisk
+
+type: application
+
+icon: https://www.asterisk.org/wp-content/uploads/asterisk-logo.png
+
+version: 20.6.0
+
+appVersion: 20.6.0
+
+keywords:
+  - 5GCN
+  - AMF
+
+sources:
+  - https://www.asterisk.org/wp-content/uploads/asterisk-logo.png
+  - https://hub.docker.com/r/oaisoftwarealliance/ims
+  - https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-fed/-/blob/develop/ci-scripts/Dockerfile.ubuntu.ims?ref_type=heads
+
+maintainers:
+  - name:  OPENAIRINTERFACE
+    email: oaicicdteam@openairinterface.org

@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: MIT
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ims-sip
+data:
+   sip.conf: |
+      [general]
+      language=fr
+      tcpenable=yes
+      tcpbindaddr=0.0.0.0
+      tcpbindport=5060
+      srvlookup=yes
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ims-users
+data:
+  users.conf: |
+{{- range .Values.imsUsers }}
+    [{{ .id }}]
+    fullname = {{ .fullname }}
+    hassip = {{ .hassip }}
+    context = {{ .context }}
+    host = {{ .host }}
+    transport = {{ .transport }}
+
+{{- end }}
