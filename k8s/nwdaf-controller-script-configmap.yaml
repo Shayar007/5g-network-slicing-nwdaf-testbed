@@ -1,0 +1,336 @@
+apiVersion: v1
+data:
+  controller.py: |
+    #!/usr/bin/env python3
+    """
+    NWDAF Slice-Specific Auto-Scaling Controller v3
+    - Per-slice UE threshold (eMBB/URLLC/mMTC configurable via env)
+    - Independent UPF deploy per slice
+    - FIX (2026-07-08): v2 queried MongoDB ("testing" db, amf/smf collections),
+      but this deployment's AMF/SMF never write registration state there
+      (they use MySQL for subscriber profiles only; runtime registration
+      state is in-memory). Replaced with a parser over `kubectl logs
+      deploy/oai-amf`, which prints a full 5GMM-state table every ~20s.
+      Slice is inferred from IMSI, since the AMF table doesn't show S-NSSAI
+      directly. IMSI->slice ranges match the current provisioning scheme:
+        eMBB : 100,105,109,200,201,202, 300-324
+        URLLC: 225, 325-339
+        mMTC : 240, 340-349
+      Update IMSI_SLICE_RANGES below if the provisioning scheme changes.
+
+    FIX (2026-07-31): The AMF reprints its FULL registration table on every
+    scan cycle -- it does not emit an explicit "UE deregistered" line. The
+    previous query_slice_counts() merged every table dump found in the
+    --tail window into one dict, so a UE that vanished (crash, ungraceful
+    kill, radio loss) would keep being counted as REGISTERED forever,
+    because nothing ever overwrote its last-seen entry with a "gone" state.
+    Fix: group parsed lines by their log timestamp (each full-table dump
+    shares one timestamp), and only count UEs present in the MOST RECENT
+    dump. Also added a periodic re-check of upf_exists() so the controller
+    notices if a UPF it thinks is deployed was removed externally.
+    """
+
+    import asyncio
+    import json
+    import logging
+    import os
+    import subprocess
+    import textwrap
+    import time
+    import urllib.parse
+    import urllib.request
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="[%(asctime)s] [nwdaf-ctrl] %(levelname)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    log = logging.getLogger("nwdaf-ctrl")
+
+    POLL_INTERVAL   = int(os.getenv("POLL_INTERVAL",   "15"))
+    EMBB_THRESHOLD  = int(os.getenv("EMBB_THRESHOLD",  "10"))
+    URLLC_THRESHOLD = int(os.getenv("URLLC_THRESHOLD", "3"))
+    MMTC_THRESHOLD  = int(os.getenv("MMTC_THRESHOLD",  "20"))
+    NAMESPACE       = os.getenv("NAMESPACE", "oai")
+    # FIX (2026-07-31, v3): AMF-log parsing removed entirely. The AMF never
+    # marks a UE deregistered when it's killed ungracefully (crash, pkill,
+    # radio loss) -- there is no NGAP UE Context Release / NAS Deregistration
+    # in that case, so even the latest AMF table dump is stale for such UEs.
+    # UE counts now come from Prometheus's `slice_ue_count` metric, which is
+    # pushed by ue_count_exporter.py (v2) using `nr-cli --dump` -- UERANSIM's
+    # own live gNB/UE registry, confirmed to drop a UE the moment its process
+    # dies, independent of the AMF's (much slower/absent) awareness of it.
+    PROMETHEUS_URL  = os.getenv("PROMETHEUS_URL",
+                                 "http://prometheus.osm.svc.cluster.local:9090")
+
+    SLICES = {
+        "embb":  {"sst": 1, "sd": "FFFFFF", "threshold": EMBB_THRESHOLD,
+                   "dnn": "oai",       "subnet": "12.1.1.0/24"},
+        "urllc": {"sst": 2, "sd": "000002",        "threshold": URLLC_THRESHOLD,
+                   "dnn": "oai-urllc", "subnet": "12.2.1.0/24"},
+        "mmtc":  {"sst": 3, "sd": "FFFFFF", "threshold": MMTC_THRESHOLD,
+                   "dnn": "oai-mmtc",  "subnet": "12.3.1.0/24"},
+    }
+
+    def run_kubectl(args, timeout=30):
+        cmd = ["/usr/local/bin/kubectl"] + args
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, errors="replace")
+        return r.stdout, r.stderr, r.returncode
+
+
+    def query_slice_counts():
+        """
+        Reads live per-slice UE counts from Prometheus's `slice_ue_count` metric
+        (pushed by ue_count_exporter.py v2, sourced from `nr-cli --dump` -- the
+        RAN's own live registry, not the AMF's slower/absent deregistration
+        tracking). See PROMETHEUS_URL comment above for why AMF logs were
+        dropped as a source entirely.
+        """
+        try:
+            url = f"{PROMETHEUS_URL}/api/v1/query?" + urllib.parse.urlencode(
+                {"query": "slice_ue_count"}
+            )
+            with urllib.request.urlopen(url, timeout=10) as resp:
+                payload = json.loads(resp.read().decode())
+
+            if payload.get("status") != "success":
+                log.warning(f"Prometheus query returned non-success status: {payload.get('status')}")
+                return None
+
+            counts = {"embb": 0, "urllc": 0, "mmtc": 0}
+            found_any = False
+            for series in payload.get("data", {}).get("result", []):
+                slice_label = series.get("metric", {}).get("slice")
+                if slice_label not in counts:
+                    continue
+                try:
+                    counts[slice_label] = int(float(series["value"][1]))
+                    found_any = True
+                except (KeyError, IndexError, ValueError):
+                    continue
+
+            if not found_any:
+                log.warning("no slice_ue_count series returned from Prometheus "
+                            "(is ue_count_exporter.py running?)")
+                return None
+
+            result = {}
+            for slice_name, cfg in SLICES.items():
+                key = f"sst{cfg['sst']}_sd{cfg['sd']}"
+                result[key] = counts.get(slice_name, 0)
+            return result
+        except Exception as e:
+            log.warning(f"Prometheus query_slice_counts error: {e}")
+            return None
+
+
+    # Some slices already have a UPF deployed under a non-standard name
+    # from earlier manual/other-tool provisioning. Map those here so the
+    # controller recognizes them instead of deploying a duplicate.
+    UPF_NAME_OVERRIDES = {
+        "embb": "oai-upf",
+        "urllc": "oai-upf2",
+        "mmtc": "oai-upf-auto-auto01",
+    }
+
+    def upf_deployment_name(slice_name):
+        return UPF_NAME_OVERRIDES.get(slice_name, f"oai-upf-auto-{slice_name}")
+
+
+    def upf_exists(slice_name):
+        _, _, rc = run_kubectl([
+            "get", "deployment", upf_deployment_name(slice_name),
+            "-n", NAMESPACE
+        ])
+        return rc == 0
+
+
+    def make_upf_yaml(slice_name, cfg):
+        dep_name = upf_deployment_name(slice_name)
+        return textwrap.dedent(f"""\
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: {dep_name}
+          namespace: {NAMESPACE}
+          labels:
+            app: {dep_name}
+            managed-by: nwdaf-controller
+            slice: {slice_name}
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: {dep_name}
+          template:
+            metadata:
+              labels:
+                app: {dep_name}
+                slice: {slice_name}
+            spec:
+              initContainers:
+              - name: init-sysctl
+                image: busybox
+                command: ["sh", "-c", "sysctl -w net.ipv4.ip_forward=1"]
+                securityContext:
+                  privileged: true
+              containers:
+              - name: upf
+                image: docker.io/oaisoftwarealliance/oai-upf:v2.1.0
+                imagePullPolicy: IfNotPresent
+                securityContext:
+                  privileged: true
+                volumeMounts:
+                - name: config
+                  mountPath: /openair-upf/etc
+              volumes:
+              - name: config
+                configMap:
+                  name: {dep_name}-config
+        ---
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: {dep_name}-config
+          namespace: {NAMESPACE}
+        data:
+          config.yaml: |
+            log_level:
+              general: info
+            register_nf:
+              general: yes
+            http_version: 2
+            snssais:
+              - &slice
+                sst: {cfg['sst']}
+                sd: '{cfg['sd']}'
+            nfs:
+              smf:
+                host: oai-smf
+                sbi:
+                  port: 80
+                  api_version: v1
+                  interface_name: eth0
+                n4:
+                  interface_name: eth0
+                  port: 8805
+              nrf:
+                host: oai-nrf
+                sbi:
+                  port: 80
+                  api_version: v1
+                  interface_name: eth0
+            upf:
+              support_features:
+                enable_bpf_datapath: no
+                enable_snat: yes
+              remote_n6_gw: 127.0.0.1
+              upf_info:
+                sNssaiUpfInfoList:
+                - sNssai: *slice
+                  dnnUpfInfoList:
+                    - dnn: {cfg['dnn']}
+            dnns:
+              - dnn: "{cfg['dnn']}"
+                pdu_session_type: "IPV4"
+                ipv4_subnet: "{cfg['subnet']}"
+        """)
+
+
+    def deploy_upf(slice_name, cfg):
+        yaml_content = make_upf_yaml(slice_name, cfg)
+        try:
+            r = subprocess.run(
+                ["/usr/local/bin/kubectl", "apply", "-f", "-"],
+                input=yaml_content, capture_output=True, text=True, timeout=30
+            )
+            if r.returncode == 0:
+                log.info(f"[{slice_name.upper()}] UPF deployed: {upf_deployment_name(slice_name)}")
+                log.info(f"[{slice_name.upper()}] {r.stdout.strip()}")
+                return True
+            else:
+                log.error(f"[{slice_name.upper()}] deploy FAILED: {r.stderr.strip()[:300]}")
+                return False
+        except Exception as e:
+            log.error(f"[{slice_name.upper()}] deploy exception: {e}")
+            return False
+
+
+    def patch_smf(slice_name):
+        log.info(f"[{slice_name.upper()}] Waiting 60s for UPF NRF registration...")
+        time.sleep(60)
+        _, _, rc = run_kubectl(
+            ["rollout", "restart", "deployment/oai-smf", "-n", NAMESPACE]
+        )
+        if rc == 0:
+            log.info(f"[{slice_name.upper()}] SMF restarted — will pick up new UPF")
+        else:
+            log.warning(f"[{slice_name.upper()}] SMF restart failed (rc={rc})")
+
+
+    async def main():
+        log.info("=" * 55)
+        log.info("  NWDAF Slice Auto-Scaling Controller v3 (Prometheus/nr-cli source)")
+        log.info("=" * 55)
+        log.info(f"  Poll     : {POLL_INTERVAL}s")
+        log.info(f"  eMBB thr : {EMBB_THRESHOLD} UEs")
+        log.info(f"  URLLC thr: {URLLC_THRESHOLD} UEs")
+        log.info(f"  mMTC thr : {MMTC_THRESHOLD} UEs")
+        log.info("=" * 55)
+
+        deployed = set()
+        loop = asyncio.get_event_loop()
+
+        for slice_name in SLICES:
+            if upf_exists(slice_name):
+                log.info(f"[{slice_name.upper()}] UPF already exists — skipping")
+                deployed.add(slice_name)
+
+        while True:
+            await asyncio.sleep(POLL_INTERVAL)
+
+            counts = query_slice_counts()
+            if counts is None:
+                log.warning("AMF log source unreachable — skipping poll")
+                continue
+
+            for slice_name, cfg in SLICES.items():
+                key      = f"sst{cfg['sst']}_sd{cfg['sd']}"
+                ue_count = counts.get(key, 0)
+                thr      = cfg["threshold"]
+
+                # FIX (2026-07-31): don't trust a stale in-memory "deployed" flag --
+                # re-check the cluster so an externally deleted UPF is noticed and
+                # can be re-provisioned instead of being silently skipped forever.
+                if upf_exists(slice_name):
+                    deployed.add(slice_name)
+                else:
+                    deployed.discard(slice_name)
+                status = "EXISTS" if slice_name in deployed else "NONE"
+
+                log.info(
+                    f"[{slice_name.upper():5s}] "
+                    f"UEs={ue_count:3d}  thr={thr:3d}  UPF={status}"
+                )
+
+                if ue_count >= thr and slice_name not in deployed:
+                    log.info(
+                        f"[{slice_name.upper()}] THRESHOLD CROSSED "
+                        f"({ue_count}>={thr}) — deploying UPF..."
+                    )
+                    if deploy_upf(slice_name, cfg):
+                        deployed.add(slice_name)
+                        loop.run_in_executor(None, patch_smf, slice_name)
+
+    if __name__ == "__main__":
+        asyncio.run(main())
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"controller.py":"#!/usr/bin/env python3\n\"\"\"\nNWDAF Slice-Specific Auto-Scaling Controller v3\n- Per-slice UE threshold (eMBB/URLLC/mMTC configurable via env)\n- Independent UPF deploy per slice\n- FIX (2026-07-08): v2 queried MongoDB (\"testing\" db, amf/smf collections),\n  but this deployment's AMF/SMF never write registration state there\n  (they use MySQL for subscriber profiles only; runtime registration\n  state is in-memory). Replaced with a parser over `kubectl logs\n  deploy/oai-amf`, which prints a full 5GMM-state table every ~20s.\n  Slice is inferred from IMSI, since the AMF table doesn't show S-NSSAI\n  directly. IMSI-\u003eslice ranges match the current provisioning scheme:\n    eMBB : 100,105,109,200,201,202, 300-324\n    URLLC: 225, 325-339\n    mMTC : 240, 340-349\n  Update IMSI_SLICE_RANGES below if the provisioning scheme changes.\n\nFIX (2026-07-31): The AMF reprints its FULL registration table on every\nscan cycle -- it does not emit an explicit \"UE deregistered\" line. The\nprevious query_slice_counts() merged every table dump found in the\n--tail window into one dict, so a UE that vanished (crash, ungraceful\nkill, radio loss) would keep being counted as REGISTERED forever,\nbecause nothing ever overwrote its last-seen entry with a \"gone\" state.\nFix: group parsed lines by their log timestamp (each full-table dump\nshares one timestamp), and only count UEs present in the MOST RECENT\ndump. Also added a periodic re-check of upf_exists() so the controller\nnotices if a UPF it thinks is deployed was removed externally.\n\"\"\"\n\nimport asyncio\nimport json\nimport logging\nimport os\nimport subprocess\nimport textwrap\nimport time\nimport urllib.parse\nimport urllib.request\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"[%(asctime)s] [nwdaf-ctrl] %(levelname)s: %(message)s\",\n    datefmt=\"%Y-%m-%d %H:%M:%S\",\n)\nlog = logging.getLogger(\"nwdaf-ctrl\")\n\nPOLL_INTERVAL   = int(os.getenv(\"POLL_INTERVAL\",   \"15\"))\nEMBB_THRESHOLD  = int(os.getenv(\"EMBB_THRESHOLD\",  \"10\"))\nURLLC_THRESHOLD = int(os.getenv(\"URLLC_THRESHOLD\", \"3\"))\nMMTC_THRESHOLD  = int(os.getenv(\"MMTC_THRESHOLD\",  \"20\"))\nNAMESPACE       = os.getenv(\"NAMESPACE\", \"oai\")\n# FIX (2026-07-31, v3): AMF-log parsing removed entirely. The AMF never\n# marks a UE deregistered when it's killed ungracefully (crash, pkill,\n# radio loss) -- there is no NGAP UE Context Release / NAS Deregistration\n# in that case, so even the latest AMF table dump is stale for such UEs.\n# UE counts now come from Prometheus's `slice_ue_count` metric, which is\n# pushed by ue_count_exporter.py (v2) using `nr-cli --dump` -- UERANSIM's\n# own live gNB/UE registry, confirmed to drop a UE the moment its process\n# dies, independent of the AMF's (much slower/absent) awareness of it.\nPROMETHEUS_URL  = os.getenv(\"PROMETHEUS_URL\",\n                             \"http://prometheus.osm.svc.cluster.local:9090\")\n\nSLICES = {\n    \"embb\":  {\"sst\": 1, \"sd\": \"FFFFFF\", \"threshold\": EMBB_THRESHOLD,\n               \"dnn\": \"oai\",       \"subnet\": \"12.1.1.0/24\"},\n    \"urllc\": {\"sst\": 2, \"sd\": \"000002\",        \"threshold\": URLLC_THRESHOLD,\n               \"dnn\": \"oai-urllc\", \"subnet\": \"12.2.1.0/24\"},\n    \"mmtc\":  {\"sst\": 3, \"sd\": \"FFFFFF\", \"threshold\": MMTC_THRESHOLD,\n               \"dnn\": \"oai-mmtc\",  \"subnet\": \"12.3.1.0/24\"},\n}\n\ndef run_kubectl(args, timeout=30):\n    cmd = [\"/usr/local/bin/kubectl\"] + args\n    r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, errors=\"replace\")\n    return r.stdout, r.stderr, r.returncode\n\n\ndef query_slice_counts():\n    \"\"\"\n    Reads live per-slice UE counts from Prometheus's `slice_ue_count` metric\n    (pushed by ue_count_exporter.py v2, sourced from `nr-cli --dump` -- the\n    RAN's own live registry, not the AMF's slower/absent deregistration\n    tracking). See PROMETHEUS_URL comment above for why AMF logs were\n    dropped as a source entirely.\n    \"\"\"\n    try:\n        url = f\"{PROMETHEUS_URL}/api/v1/query?\" + urllib.parse.urlencode(\n            {\"query\": \"slice_ue_count\"}\n        )\n        with urllib.request.urlopen(url, timeout=10) as resp:\n            payload = json.loads(resp.read().decode())\n\n        if payload.get(\"status\") != \"success\":\n            log.warning(f\"Prometheus query returned non-success status: {payload.get('status')}\")\n            return None\n\n        counts = {\"embb\": 0, \"urllc\": 0, \"mmtc\": 0}\n        found_any = False\n        for series in payload.get(\"data\", {}).get(\"result\", []):\n            slice_label = series.get(\"metric\", {}).get(\"slice\")\n            if slice_label not in counts:\n                continue\n            try:\n                counts[slice_label] = int(float(series[\"value\"][1]))\n                found_any = True\n            except (KeyError, IndexError, ValueError):\n                continue\n\n        if not found_any:\n            log.warning(\"no slice_ue_count series returned from Prometheus \"\n                        \"(is ue_count_exporter.py running?)\")\n            return None\n\n        result = {}\n        for slice_name, cfg in SLICES.items():\n            key = f\"sst{cfg['sst']}_sd{cfg['sd']}\"\n            result[key] = counts.get(slice_name, 0)\n        return result\n    except Exception as e:\n        log.warning(f\"Prometheus query_slice_counts error: {e}\")\n        return None\n\n\n# Some slices already have a UPF deployed under a non-standard name\n# from earlier manual/other-tool provisioning. Map those here so the\n# controller recognizes them instead of deploying a duplicate.\nUPF_NAME_OVERRIDES = {\n    \"embb\": \"oai-upf\",\n    \"urllc\": \"oai-upf2\",\n    \"mmtc\": \"oai-upf-auto-auto01\",\n}\n\ndef upf_deployment_name(slice_name):\n    return UPF_NAME_OVERRIDES.get(slice_name, f\"oai-upf-auto-{slice_name}\")\n\n\ndef upf_exists(slice_name):\n    _, _, rc = run_kubectl([\n        \"get\", \"deployment\", upf_deployment_name(slice_name),\n        \"-n\", NAMESPACE\n    ])\n    return rc == 0\n\n\ndef make_upf_yaml(slice_name, cfg):\n    dep_name = upf_deployment_name(slice_name)\n    return textwrap.dedent(f\"\"\"\\\n    apiVersion: apps/v1\n    kind: Deployment\n    metadata:\n      name: {dep_name}\n      namespace: {NAMESPACE}\n      labels:\n        app: {dep_name}\n        managed-by: nwdaf-controller\n        slice: {slice_name}\n    spec:\n      replicas: 1\n      selector:\n        matchLabels:\n          app: {dep_name}\n      template:\n        metadata:\n          labels:\n            app: {dep_name}\n            slice: {slice_name}\n        spec:\n          initContainers:\n          - name: init-sysctl\n            image: busybox\n            command: [\"sh\", \"-c\", \"sysctl -w net.ipv4.ip_forward=1\"]\n            securityContext:\n              privileged: true\n          containers:\n          - name: upf\n            image: docker.io/oaisoftwarealliance/oai-upf:v2.1.0\n            imagePullPolicy: IfNotPresent\n            securityContext:\n              privileged: true\n            volumeMounts:\n            - name: config\n              mountPath: /openair-upf/etc\n          volumes:\n          - name: config\n            configMap:\n              name: {dep_name}-config\n    ---\n    apiVersion: v1\n    kind: ConfigMap\n    metadata:\n      name: {dep_name}-config\n      namespace: {NAMESPACE}\n    data:\n      config.yaml: |\n        log_level:\n          general: info\n        register_nf:\n          general: yes\n        http_version: 2\n        snssais:\n          - \u0026slice\n            sst: {cfg['sst']}\n            sd: '{cfg['sd']}'\n        nfs:\n          smf:\n            host: oai-smf\n            sbi:\n              port: 80\n              api_version: v1\n              interface_name: eth0\n            n4:\n              interface_name: eth0\n              port: 8805\n          nrf:\n            host: oai-nrf\n            sbi:\n              port: 80\n              api_version: v1\n              interface_name: eth0\n        upf:\n          support_features:\n            enable_bpf_datapath: no\n            enable_snat: yes\n          remote_n6_gw: 127.0.0.1\n          upf_info:\n            sNssaiUpfInfoList:\n            - sNssai: *slice\n              dnnUpfInfoList:\n                - dnn: {cfg['dnn']}\n        dnns:\n          - dnn: \"{cfg['dnn']}\"\n            pdu_session_type: \"IPV4\"\n            ipv4_subnet: \"{cfg['subnet']}\"\n    \"\"\")\n\n\ndef deploy_upf(slice_name, cfg):\n    yaml_content = make_upf_yaml(slice_name, cfg)\n    try:\n        r = subprocess.run(\n            [\"/usr/local/bin/kubectl\", \"apply\", \"-f\", \"-\"],\n            input=yaml_content, capture_output=True, text=True, timeout=30\n        )\n        if r.returncode == 0:\n            log.info(f\"[{slice_name.upper()}] UPF deployed: {upf_deployment_name(slice_name)}\")\n            log.info(f\"[{slice_name.upper()}] {r.stdout.strip()}\")\n            return True\n        else:\n            log.error(f\"[{slice_name.upper()}] deploy FAILED: {r.stderr.strip()[:300]}\")\n            return False\n    except Exception as e:\n        log.error(f\"[{slice_name.upper()}] deploy exception: {e}\")\n        return False\n\n\ndef patch_smf(slice_name):\n    log.info(f\"[{slice_name.upper()}] Waiting 60s for UPF NRF registration...\")\n    time.sleep(60)\n    _, _, rc = run_kubectl(\n        [\"rollout\", \"restart\", \"deployment/oai-smf\", \"-n\", NAMESPACE]\n    )\n    if rc == 0:\n        log.info(f\"[{slice_name.upper()}] SMF restarted — will pick up new UPF\")\n    else:\n        log.warning(f\"[{slice_name.upper()}] SMF restart failed (rc={rc})\")\n\n\nasync def main():\n    log.info(\"=\" * 55)\n    log.info(\"  NWDAF Slice Auto-Scaling Controller v3 (Prometheus/nr-cli source)\")\n    log.info(\"=\" * 55)\n    log.info(f\"  Poll     : {POLL_INTERVAL}s\")\n    log.info(f\"  eMBB thr : {EMBB_THRESHOLD} UEs\")\n    log.info(f\"  URLLC thr: {URLLC_THRESHOLD} UEs\")\n    log.info(f\"  mMTC thr : {MMTC_THRESHOLD} UEs\")\n    log.info(\"=\" * 55)\n\n    deployed = set()\n    loop = asyncio.get_event_loop()\n\n    for slice_name in SLICES:\n        if upf_exists(slice_name):\n            log.info(f\"[{slice_name.upper()}] UPF already exists — skipping\")\n            deployed.add(slice_name)\n\n    while True:\n        await asyncio.sleep(POLL_INTERVAL)\n\n        counts = query_slice_counts()\n        if counts is None:\n            log.warning(\"AMF log source unreachable — skipping poll\")\n            continue\n\n        for slice_name, cfg in SLICES.items():\n            key      = f\"sst{cfg['sst']}_sd{cfg['sd']}\"\n            ue_count = counts.get(key, 0)\n            thr      = cfg[\"threshold\"]\n\n            # FIX (2026-07-31): don't trust a stale in-memory \"deployed\" flag --\n            # re-check the cluster so an externally deleted UPF is noticed and\n            # can be re-provisioned instead of being silently skipped forever.\n            if upf_exists(slice_name):\n                deployed.add(slice_name)\n            else:\n                deployed.discard(slice_name)\n            status = \"EXISTS\" if slice_name in deployed else \"NONE\"\n\n            log.info(\n                f\"[{slice_name.upper():5s}] \"\n                f\"UEs={ue_count:3d}  thr={thr:3d}  UPF={status}\"\n            )\n\n            if ue_count \u003e= thr and slice_name not in deployed:\n                log.info(\n                    f\"[{slice_name.upper()}] THRESHOLD CROSSED \"\n                    f\"({ue_count}\u003e={thr}) — deploying UPF...\"\n                )\n                if deploy_upf(slice_name, cfg):\n                    deployed.add(slice_name)\n                    loop.run_in_executor(None, patch_smf, slice_name)\n\nif __name__ == \"__main__\":\n    asyncio.run(main())\n"},"kind":"ConfigMap","metadata":{"annotations":{},"creationTimestamp":null,"name":"nwdaf-controller-script","namespace":"oai"}}
+  creationTimestamp: "2026-06-05T10:28:34Z"
+  name: nwdaf-controller-script
+  namespace: oai
+  resourceVersion: "3942960"
+  uid: 47b43042-8e8b-4b17-b9ee-3bee3e784e30

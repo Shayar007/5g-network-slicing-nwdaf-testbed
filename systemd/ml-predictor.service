@@ -1,0 +1,16 @@
+[Unit]
+Description=ML Traffic Predictor (advisory, read-only)
+After=network.target ue-count-exporter.service
+
+[Service]
+Type=simple
+User=comm
+WorkingDirectory=/home/comm/slice-test
+ExecStart=/home/comm/slice-test/slice-env/bin/python3 /home/comm/slice-test/ml_predictor.py
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/slice-testbed/ml_predictor.log
+StandardError=append:/var/log/slice-testbed/ml_predictor.log
+
+[Install]
+WantedBy=multi-user.target

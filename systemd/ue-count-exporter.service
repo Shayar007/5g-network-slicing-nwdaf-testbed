@@ -1,0 +1,16 @@
+[Unit]
+Description=UE Count Exporter (nr-cli/RAN-truth based Prometheus pusher)
+After=network.target
+
+[Service]
+Type=simple
+User=comm
+WorkingDirectory=/home/comm/slice-test
+ExecStart=/home/comm/slice-test/slice-env/bin/python3 /home/comm/slice-test/ue_count_exporter.py
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/slice-testbed/ue_count_exporter.log
+StandardError=append:/var/log/slice-testbed/ue_count_exporter.log
+
+[Install]
+WantedBy=multi-user.target

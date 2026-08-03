@@ -1,0 +1,17 @@
+[Unit]
+Description=Predictive Pre-Scaler (DRY-RUN by default -- see comments)
+After=network.target ue-count-exporter.service ml-predictor.service
+
+[Service]
+Type=simple
+User=comm
+WorkingDirectory=/home/comm/slice-test
+Environment=DRY_RUN=true
+ExecStart=/home/comm/slice-test/slice-env/bin/python3 /home/comm/slice-test/predictive_prescaler.py
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/slice-testbed/predictive_prescaler.log
+StandardError=append:/var/log/slice-testbed/predictive_prescaler.log
+
+[Install]
+WantedBy=multi-user.target
