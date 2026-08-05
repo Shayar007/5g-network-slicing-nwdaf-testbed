@@ -24,6 +24,19 @@ SAFETY DESIGN (read before running in LIVE mode):
   many consecutive polls before acting, to avoid triggering on a
   single noisy/transient prediction spike.
 
+OBSERVABILITY (added 2026-08-04): this service previously had no
+Prometheus output of its own -- health was only inferable indirectly via
+the systemd watchdog (is the process alive), with no signal about
+whether its decision logic was actually progressing or how often it has
+fired. Two metrics are now pushed each poll cycle:
+  - slice_testbed_prescaler_last_poll_timestamp: unix time of the last
+    completed poll cycle (staleness/heartbeat signal).
+  - slice_testbed_prescaler_trigger_total{slice}: cumulative count of
+    CONFIRMED predictive triggers for that slice, counted whether or not
+    DRY_RUN is active (a confirmed trigger is a meaningful logic event
+    regardless of whether it actually mutated the cluster).
+This is purely additive -- it does not change any decision logic above.
+
 Usage:
   DRY_RUN=true python3 predictive_prescaler.py     # test first
   DRY_RUN=false python3 predictive_prescaler.py    # then go live
@@ -36,6 +49,7 @@ import logging
 import tempfile
 
 import requests
+from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,6 +59,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://localhost:9090")
+PUSHGATEWAY_ADDR = os.getenv("PUSHGATEWAY_ADDR", "localhost:9091")
 NAMESPACE = os.getenv("NAMESPACE", "oai")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "20"))
 DRY_RUN = os.getenv("DRY_RUN", "true").lower() == "true"
@@ -164,6 +179,7 @@ data:
 """
 
 _confirm_state = {slice_name: 0 for slice_name in SLICE_CONFIG}
+_trigger_count = {slice_name: 0 for slice_name in SLICE_CONFIG}
 
 
 def query_instant(metric):
@@ -211,6 +227,25 @@ def deploy_upf(slice_name):
         log.error(f"kubectl apply failed for {slice_name}: {r.stderr.strip()}")
     else:
         log.info(f"[LIVE] {slice_name} UPF applied successfully: {r.stdout.strip()}")
+
+
+def push_metrics():
+    """Push heartbeat + cumulative trigger-count metrics. Purely observational."""
+    try:
+        registry = CollectorRegistry()
+        g_heartbeat = Gauge("slice_testbed_prescaler_last_poll_timestamp",
+                             "Unix time of the last completed prescaler poll cycle",
+                             registry=registry)
+        g_triggers = Gauge("slice_testbed_prescaler_trigger_total",
+                            "Cumulative confirmed predictive triggers per slice "
+                            "(counted regardless of DRY_RUN)",
+                            ["slice"], registry=registry)
+        g_heartbeat.set(time.time())
+        for slice_name, count in _trigger_count.items():
+            g_triggers.labels(slice=slice_name).set(count)
+        push_to_gateway(PUSHGATEWAY_ADDR, job="predictive_prescaler_health", registry=registry)
+    except Exception as e:
+        log.warning(f"metrics push failed (non-fatal): {e}")
 
 
 def main():
@@ -264,6 +299,7 @@ def main():
                 if _confirm_state[slice_name] >= CONFIRM_CYCLES:
                     log.info(f"[{slice_name.upper():6s}] PREDICTIVE TRIGGER "
                               f"CONFIRMED -- pre-scaling ahead of reactive threshold")
+                    _trigger_count[slice_name] += 1
                     deploy_upf(slice_name)
                     _confirm_state[slice_name] = 0
             else:
@@ -271,6 +307,7 @@ def main():
                 log.info(f"[{slice_name.upper():6s}] predicted={pred_val:.1f} "
                           f"< threshold={threshold}, current={cur_val:.0f}")
 
+        push_metrics()
         time.sleep(POLL_INTERVAL)
 
 
