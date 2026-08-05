@@ -1,0 +1,61 @@
+=== STEP 0: Baseline ===
+{
+    "status": "success",
+    "data": {
+        "resultType": "vector",
+        "result": [
+            {
+                "metric": {
+                    "__name__": "slice_ue_count",
+                    "job": "oai_slice_ue_count",
+                    "slice": "mmtc",
+                    "sst": "3",
+                    "upf": "oai-upf-auto-auto01"
+                },
+                "value": [
+                    1785922088.368,
+                    "5"
+                ]
+            }
+        ]
+    }
+}
+=== STEP 1: Record baseline actual + predicted (t=0, before load change) ===
+  [baseline] actual=5 predicted=5.1170731707317065
+=== STEP 2: Load UP -- launch 4 UEs, record every 20s for 100s ===
+  [load_up_t1] actual=5 predicted=5.1170731707317065
+  [load_up_t2] actual=9 predicted=4.0634146341463415
+  [load_up_t3] actual=9 predicted=4.144250871080139
+  [load_up_t4] actual=9 predicted=4.286411149825784
+  [load_up_t5] actual=9 predicted=4.286411149825784
+=== STEP 3: Load DOWN -- kill 2 of the 4 UEs, record every 20s for 100s ===
+/tmp/ml_accuracy_dynamic_test.sh: line 55: 2067728 Killed                  sudo /home/comm/UERANSIM/build/nr-ue -c "$f" > /tmp/mltest-$(basename "$f" .yaml).log 2>&1
+/tmp/ml_accuracy_dynamic_test.sh: line 55: 2068500 Killed                  sudo /home/comm/UERANSIM/build/nr-ue -c "$f" > /tmp/mltest-$(basename "$f" .yaml).log 2>&1
+  [load_down_t1] actual=7 predicted=4.300348432055748
+  [load_down_t2] actual=7 predicted=5.034843205574913
+  [load_down_t3] actual=7 predicted=5.034843205574913
+  [load_down_t4] actual=7 predicted=5.2383275261324025
+  [load_down_t5] actual=7 predicted=5.949128919860627
+=== STEP 4: Compute accuracy metrics (predicted[t] vs actual[t+~60s], and same-time correlation) ===
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+FileNotFoundError: [Errno 2] No such file or directory: '$RESULTS_CSV'
+
+--- Per-point same-timestamp comparison ---
+baseline        actual=    5 predicted=   5.12  abs_error= 0.12
+load_up_t1      actual=    5 predicted=   5.12  abs_error= 0.12
+load_up_t2      actual=    9 predicted=   4.06  abs_error= 4.94
+load_up_t3      actual=    9 predicted=   4.14  abs_error= 4.86
+load_up_t4      actual=    9 predicted=   4.29  abs_error= 4.71
+load_up_t5      actual=    9 predicted=   4.29  abs_error= 4.71
+load_down_t1    actual=    7 predicted=   4.30  abs_error= 2.70
+load_down_t2    actual=    7 predicted=   5.03  abs_error= 1.97
+load_down_t3    actual=    7 predicted=   5.03  abs_error= 1.97
+load_down_t4    actual=    7 predicted=   5.24  abs_error= 1.76
+load_down_t5    actual=    7 predicted=   5.95  abs_error= 1.05
+
+=== SUMMARY ===
+Data points: 11
+MAE (mean absolute error): 2.63 UEs
+Max absolute error: 4.94 UEs
+=== STEP 5: Save evidence to repo ===
