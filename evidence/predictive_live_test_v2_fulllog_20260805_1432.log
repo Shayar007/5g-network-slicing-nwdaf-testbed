@@ -1,0 +1,103 @@
+=== STEP 0: Pre-flight backup ===
+Backup at: /home/comm/pre-predictive-live-test-v2-20260805_1432
+=== STEP 1: Isolate predictive path (set MMTC_THRESHOLD=999 on reactive controller) ===
+deployment.apps/nwdaf-slice-controller env updated
+Waiting for deployment "nwdaf-slice-controller" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "nwdaf-slice-controller" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "nwdaf-slice-controller" rollout to finish: 1 old replicas are pending termination...
+deployment "nwdaf-slice-controller" successfully rolled out
+=== STEP 2: Delete mMTC UPF (creates the gap predictive path must fill) ===
+deployment.apps "oai-upf-auto-auto01" deleted
+configmap "oai-upf-auto-auto01-config" deleted
+oai-upf                   1/1     1            1           11d
+oai-upf2                  1/1     1            1           63d
+=== STEP 3: Enable LIVE mode on prescaler (temporary override) ===
+Aug 05 11:46:42 comm-precision-3490 systemd[1]: predictive-prescaler.service: Deactivated successfully.
+Aug 05 11:46:46 comm-precision-3490 systemd[1]: Stopped predictive-prescaler.service - Predictive Pre-Scaler (DRY-RUN by default -- see comments).
+Aug 05 11:46:46 comm-precision-3490 systemd[1]: Started predictive-prescaler.service - Predictive Pre-Scaler (DRY-RUN by default -- see comments).
+Aug 05 14:32:15 comm-precision-3490 systemd[1]: Stopping predictive-prescaler.service - Predictive Pre-Scaler (DRY-RUN by default -- see comments)...
+Aug 05 14:32:15 comm-precision-3490 systemd[1]: predictive-prescaler.service: Deactivated successfully.
+Aug 05 14:32:15 comm-precision-3490 systemd[1]: Stopped predictive-prescaler.service - Predictive Pre-Scaler (DRY-RUN by default -- see comments).
+Aug 05 14:32:15 comm-precision-3490 systemd[1]: predictive-prescaler.service: Consumed 3min 25.892s CPU time, 46.1M memory peak, 0B memory swap peak.
+Aug 05 14:32:15 comm-precision-3490 systemd[1]: Started predictive-prescaler.service - Predictive Pre-Scaler (DRY-RUN by default -- see comments).
+=== STEP 4: Nudge mMTC UE count up (bumps prediction trend without crossing reactive threshold=5) ===
+=== STEP 5: Poll for confirmed predictive trigger (max 3 minutes) ===
+>>> TRIGGER FOUND: 14996:[2026-08-04 14:46:13] [predictive-prescaler] INFO: [MMTC  ] PREDICTIVE TRIGGER CONFIRMED -- pre-scaling ahead of reactive threshold
+=== STEP 6: Evidence collection ===
+--- UPF state ---
+oai-upf                   1/1     1            1           11d
+oai-upf2                  1/1     1            1           63d
+--- Trigger-count metric (should show mmtc >= 1 if triggered) ---
+{
+    "status": "success",
+    "data": {
+        "resultType": "vector",
+        "result": [
+            {
+                "metric": {
+                    "__name__": "slice_testbed_prescaler_trigger_total",
+                    "job": "predictive_prescaler_health",
+                    "slice": "embb"
+                },
+                "value": [
+                    1785920554.297,
+                    "0"
+                ]
+            },
+            {
+                "metric": {
+                    "__name__": "slice_testbed_prescaler_trigger_total",
+                    "job": "predictive_prescaler_health",
+                    "slice": "mmtc"
+                },
+                "value": [
+                    1785920554.297,
+                    "0"
+                ]
+            },
+            {
+                "metric": {
+                    "__name__": "slice_testbed_prescaler_trigger_total",
+                    "job": "predictive_prescaler_health",
+                    "slice": "urllc"
+                },
+                "value": [
+                    1785920554.297,
+                    "0"
+                ]
+            }
+        ]
+    }
+}
+--- Relevant log lines ---
+[2026-08-05 14:30:04] [predictive-prescaler] INFO: [EMBB  ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:30:04] [predictive-prescaler] INFO: [URLLC ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:30:05] [predictive-prescaler] INFO: [MMTC  ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:30:25] [predictive-prescaler] INFO: [EMBB  ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:30:25] [predictive-prescaler] INFO: [URLLC ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:30:25] [predictive-prescaler] INFO: [MMTC  ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:30:45] [predictive-prescaler] INFO: [EMBB  ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:30:45] [predictive-prescaler] INFO: [URLLC ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:30:45] [predictive-prescaler] INFO: [MMTC  ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:31:05] [predictive-prescaler] INFO: [EMBB  ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:31:06] [predictive-prescaler] INFO: [URLLC ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:31:06] [predictive-prescaler] INFO: [MMTC  ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:31:26] [predictive-prescaler] INFO: [EMBB  ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:31:26] [predictive-prescaler] INFO: [URLLC ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:31:26] [predictive-prescaler] INFO: [MMTC  ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:31:46] [predictive-prescaler] INFO: [EMBB  ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:31:46] [predictive-prescaler] INFO: [URLLC ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:31:46] [predictive-prescaler] INFO: [MMTC  ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:32:06] [predictive-prescaler] INFO: [EMBB  ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:32:06] [predictive-prescaler] INFO: [URLLC ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:32:07] [predictive-prescaler] INFO: [MMTC  ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:32:15] [predictive-prescaler] INFO: ============================================================
+[2026-08-05 14:32:15] [predictive-prescaler] INFO:   Predictive Pre-Scaler
+[2026-08-05 14:32:15] [predictive-prescaler] INFO:   Mode: LIVE (will deploy UPFs)
+[2026-08-05 14:32:15] [predictive-prescaler] INFO:   Confirm cycles required: 2
+[2026-08-05 14:32:15] [predictive-prescaler] INFO: ============================================================
+[2026-08-05 14:32:15] [predictive-prescaler] WARNING: Running in LIVE mode. This WILL modify the cluster when a predictive trigger fires.
+[2026-08-05 14:32:15] [predictive-prescaler] INFO: [EMBB  ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:32:15] [predictive-prescaler] INFO: [URLLC ] UPF already deployed -- predictive check skipped
+[2026-08-05 14:32:15] [predictive-prescaler] INFO: [MMTC  ] predicted=4.0 < threshold=5, current=4
+=== STEP 7: Save evidence to repo ===
