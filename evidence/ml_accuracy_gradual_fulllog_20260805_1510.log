@@ -1,0 +1,58 @@
+=== STEP 0: Baseline ===
+{
+    "status": "success",
+    "data": {
+        "resultType": "vector",
+        "result": [
+            {
+                "metric": {
+                    "__name__": "slice_ue_count",
+                    "job": "oai_slice_ue_count",
+                    "slice": "mmtc",
+                    "sst": "3",
+                    "upf": "oai-upf-auto-auto01"
+                },
+                "value": [
+                    1785922605.423,
+                    "5"
+                ]
+            }
+        ]
+    }
+}
+  [baseline] actual=5 predicted=5.022299651567945
+=== STEP 1: Gradual ramp -- 1 UE every 40s, 4 UEs total (smooth trend, not a jump) ===
+  launched ue-mmtc-342.yaml
+  [ramp_after_launch] actual=5 predicted=5.022299651567945
+  [ramp_settle] actual=6 predicted=4.8550522648083625
+  launched ue-mmtc-343.yaml
+  [ramp_after_launch] actual=7 predicted=4.5651567944250875
+  [ramp_settle] actual=7 predicted=4.5651567944250875
+  launched ue-mmtc-344.yaml
+  [ramp_after_launch] actual=7 predicted=4.605574912891986
+  [ramp_settle] actual=8 predicted=4.676655052264808
+  launched ue-mmtc-345.yaml
+  [ramp_after_launch] actual=8 predicted=4.676655052264808
+  [ramp_settle] actual=9 predicted=5.14773519163763
+=== STEP 2: Hold steady for 2 more cycles (let model catch up to new level) ===
+  [hold_t1] actual=9 predicted=6.0843205574912895
+  [hold_t2] actual=9 predicted=6.0843205574912895
+=== STEP 3: Lag-corrected accuracy (predicted[T] vs actual[T+60s]) ===
+phase            predicted  actual(+60s)  abs_error
+baseline             5.02            7      1.98
+ramp_after_launch      5.02            7      1.98
+ramp_settle          4.86            7      2.14
+ramp_after_launch      4.57            8      3.43
+ramp_settle          4.57            8      3.43
+ramp_after_launch      4.61            9      4.39
+ramp_settle          4.68            9      4.32
+ramp_after_launch      4.68            9      4.32
+ramp_settle          5.15  (no future data yet, skipped)
+hold_t1              6.08  (no future data yet, skipped)
+hold_t2              6.08  (no future data yet, skipped)
+
+=== GRADUAL-RAMP SUMMARY ===
+Data points: 8
+MAE (60s-ahead, gradual ramp): 3.25 UEs
+Max absolute error: 4.39 UEs
+=== STEP 4: Save evidence ===
