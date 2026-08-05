@@ -1,0 +1,13 @@
+Lag-corrected (60s-ahead) forecast accuracy for ml_predictor.py
+predicted[T] compared against actual[T+60s], not actual[T]
+
+baseline        predicted=   5.12  actual(+60s)=    9  abs_error= 3.88
+load_up_t1      predicted=   5.12  actual(+60s)=    9  abs_error= 3.88
+load_up_t2      predicted=   4.06  actual(+60s)=    9  abs_error= 4.94
+load_up_t3      predicted=   4.14  actual(+60s)=    7  abs_error= 2.86
+load_up_t4      predicted=   4.29  actual(+60s)=    7  abs_error= 2.71
+load_up_t5      predicted=   4.29  actual(+60s)=    7  abs_error= 2.71
+load_down_t1    predicted=   4.30  actual(+60s)=    7  abs_error= 2.70
+load_down_t2    predicted=   5.03  actual(+60s)=    7  abs_error= 1.97
+
+MAE (60s-ahead): 3.21 UEs | Max error: 4.94 UEs | N=8
