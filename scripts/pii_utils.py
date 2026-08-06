@@ -104,6 +104,33 @@ def anonymize_many(identifiers, salt: bytes):
     return [anonymize_imsi(i, salt) for i in identifiers]
 
 
+# Matches "imsi-<digits>" wherever it appears in a line -- not just whole-line
+# matches like _IMSI_RE above. This is deliberately broader, since debug/evidence
+# text often has IMSIs embedded mid-line (e.g. "UPF=EXISTS UEs=5 imsi-...").
+_IMSI_INLINE_RE = re.compile(r"imsi-\d+")
+
+
+def sanitize_nr_cli_output(text: str, salt: bytes) -> str:
+    """
+    Replace every 'imsi-<digits>' occurrence in a block of text with its
+    pseudonym, leaving everything else unchanged.
+
+    Intended use: before saving any nr-cli --dump output, log excerpt, or
+    debug capture to an evidence/ file (or printing it to a log that might
+    get committed), run it through this function first.
+
+        raw = subprocess.run([...], capture_output=True, text=True).stdout
+        safe = sanitize_nr_cli_output(raw, salt)
+        with open("evidence/some_capture.log", "w") as f:
+            f.write(safe)
+
+    This does NOT change counts, structure, or any non-IMSI content --
+    it is a drop-in replacement for the exact text you would have saved,
+    just with subscriber identifiers pseudonymized.
+    """
+    return _IMSI_INLINE_RE.sub(lambda m: anonymize_imsi(m.group(0), salt), text)
+
+
 if __name__ == "__main__":
     # Self-test / demo -- safe to run standalone, does not touch the cluster.
     salt = load_or_create_salt()
@@ -133,5 +160,24 @@ if __name__ == "__main__":
     d = anonymize_imsi("imsi-001010000000341", salt)
     assert a != d, "FAIL: collision on different input!"
     print(f"  OK: different IMSI -> different pseudonym ({d})")
+
+    print("\n--- Confirm sanitize_nr_cli_output() on a realistic multi-line capture ---")
+    sample = (
+        "UERANSIM-gnb-1\n"
+        "imsi-001010000000340\n"
+        "imsi-001010000000341\n"
+        "[2026-08-05 09:26:37] [nwdaf-ctrl] INFO: [MMTC ] UEs=  5  thr=999  UPF=EXISTS imsi-001010000000340\n"
+    )
+    sanitized = sanitize_nr_cli_output(sample, salt)
+    assert "imsi-" not in sanitized, "FAIL: raw imsi- string still present after sanitization!"
+    assert sanitized.count("ue-") == 3, "FAIL: expected 3 pseudonyms (2 dump lines + 1 inline)"
+    # Same IMSI appearing twice in the text should produce the identical pseudonym both times
+    assert sanitized.count(a) >= 0  # (a defined above) -- just ensure no crash; format check below
+    first_line_pseudo = sanitized.splitlines()[1]
+    inline_pseudo = sanitized.splitlines()[3].split()[-1]
+    assert first_line_pseudo == inline_pseudo, "FAIL: same IMSI gave different pseudonyms in same text!"
+    print("  OK: sanitized text has zero 'imsi-' occurrences")
+    print("  OK: repeated IMSI in same text -> same pseudonym both times")
+    print(f"  Sample output:\n{sanitized}")
 
     print("\nAll self-tests passed.")
