@@ -1,2 +1,6 @@
 __pycache__/
 *.pyc
+
+# PII anonymization salt -- NEVER commit this
+*pii_salt*
+.slice-testbed/
