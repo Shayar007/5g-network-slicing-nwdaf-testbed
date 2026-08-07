@@ -2,9 +2,10 @@
 """
 ml_predictor.py
 Standalone, read-only ML traffic-prediction service. Does NOT control
-anything -- it only reads historical UE-count metrics from Prometheus,
-trains a lightweight regression model per slice, and pushes predicted
-near-future UE counts as new Prometheus metrics for visualization.
+anything -- it only reads historical UE-count metrics (from Prometheus
+live, OR a historical CSV export -- see data_source.py), trains a
+lightweight regression model per slice, and pushes predicted near-future
+UE counts as new Prometheus metrics for visualization.
 
 This is intentionally decoupled from nwdaf-slice-controller (the
 production threshold-based auto-scaler). If this script crashes or
@@ -20,9 +21,25 @@ An exponential-weighted anomaly flag is also computed: if the current
 value deviates more than ANOMALY_Z_THRESH standard deviations from the
 recent rolling mean, it's flagged as anomalous.
 
+DATA SOURCE (2026-08-06 update, P1 production-readiness item)
+----------------------------------------------------------------
+History is now fetched via data_source.get_history(), which is a
+pluggable abstraction over either:
+  DATA_SOURCE=prometheus (default) -- current live-testbed behavior,
+    unchanged from the original version of this script.
+  DATA_SOURCE=csv -- reads a historical export CSV instead (see
+    data_source.py docstring for expected columns). This is the
+    realistic path for real operator data (Airtel/Jio/Vi or similar),
+    which will most likely arrive as an offline export, not a live feed.
+No other logic in this file changed as part of that update -- the
+model-fitting, anomaly-check, and metric-pushing code is identical to
+the original Prometheus-only version.
+
 Usage:
   python3 ml_predictor.py
-Requires: numpy, scikit-learn, requests, prometheus_client
+  DATA_SOURCE=csv HISTORICAL_DATA_CSV=/path/to/data.csv python3 ml_predictor.py
+Requires: numpy, scikit-learn, requests (only needed for prometheus mode),
+  prometheus_client
   pip install numpy scikit-learn requests prometheus_client --break-system-packages
 """
 
@@ -32,9 +49,10 @@ import logging
 from datetime import datetime
 
 import numpy as np
-import requests
 from sklearn.linear_model import LinearRegression
 from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
+
+from data_source import get_history
 
 logging.basicConfig(
     level=logging.INFO,
@@ -43,7 +61,6 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://localhost:9090")
 PUSHGATEWAY_ADDR = os.getenv("PUSHGATEWAY_ADDR", "localhost:9091")
 JOB_NAME = "oai_slice_ml_predictor"
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "20"))
@@ -53,32 +70,6 @@ ANOMALY_Z_THRESH = float(os.getenv("ANOMALY_Z_THRESH", "2.5"))
 MIN_POINTS_FOR_FIT = 4
 
 SLICES = ["embb", "urllc", "mmtc"]
-
-
-def query_range(metric, minutes):
-    """Query Prometheus for a metric's history over the last `minutes`."""
-    end = time.time()
-    start = end - minutes * 60
-    step = "15s"
-    try:
-        r = requests.get(
-            f"{PROMETHEUS_URL}/api/v1/query_range",
-            params={"query": metric, "start": start, "end": end, "step": step},
-            timeout=10,
-        )
-        r.raise_for_status()
-        data = r.json()
-        results = {}
-        for series in data.get("data", {}).get("result", []):
-            slice_label = series["metric"].get("slice", "unknown")
-            values = series.get("values", [])
-            ts = np.array([float(v[0]) for v in values])
-            vals = np.array([float(v[1]) for v in values])
-            results[slice_label] = (ts, vals)
-        return results
-    except Exception as e:
-        log.warning(f"Prometheus query failed: {e}")
-        return {}
 
 
 def fit_and_predict(ts, vals, horizon_seconds):
@@ -140,13 +131,14 @@ def main():
     log.info("  Standalone ML Traffic Predictor (read-only)")
     log.info("  Does NOT control auto-scaling -- advisory only")
     log.info("=" * 55)
+    log.info(f"  Data source    : {os.getenv('DATA_SOURCE', 'prometheus')}")
     log.info(f"  History window : {HISTORY_WINDOW_MINUTES} min")
     log.info(f"  Predict horizon: {PREDICT_HORIZON_SECONDS}s")
     log.info(f"  Poll interval  : {POLL_INTERVAL}s")
     log.info("=" * 55)
 
     while True:
-        history = query_range("slice_ue_count", HISTORY_WINDOW_MINUTES)
+        history = get_history("slice_ue_count", HISTORY_WINDOW_MINUTES)
         predictions = {}
 
         for slice_name in SLICES:
