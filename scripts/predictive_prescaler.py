@@ -85,7 +85,7 @@ SLICE_CONFIG = {
     "mmtc": {
         "deployment_name": "oai-upf-auto-auto01",
         "configmap_name": "oai-upf-auto-auto01-config",
-        "sst": 3, "sd": "FFFFFF", "dnn": "oai-mmtc", "subnet": "12.3.1.0/24",
+        "sst": 3, "sd": "000003", "dnn": "oai-mmtc", "subnet": "12.3.1.0/24",
     },
 }
 

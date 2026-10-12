@@ -90,7 +90,7 @@ TIERED_THRESHOLDS = {
 SLICE_CFG = {
     "embb":  {"sst": 1, "sd": "FFFFFF", "dnn": "oai",      "subnet": "12.1.1.0/24"},
     "urllc": {"sst": 2, "sd": "000002", "dnn": "oai-urllc", "subnet": "12.2.1.0/24"},
-    "mmtc":  {"sst": 3, "sd": "FFFFFF", "dnn": "oai-mmtc",  "subnet": "12.3.1.0/24"},
+    "mmtc":  {"sst": 3, "sd": "000003", "dnn": "oai-mmtc",  "subnet": "12.3.1.0/24"},
 }
 
 UPF_NAME_OVERRIDES = {
