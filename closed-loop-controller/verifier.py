@@ -66,6 +66,17 @@ def verify_action(slice_name: str, action_id: str, direction: str,
     detail = (f"latency {pre_latency:.2f}ms -> {post_latency:.2f}ms "
               f"({lat_change_pct:+.1f}%), loss {pre_loss}% -> {post_loss}%")
 
+    # Noise floor: sub-0.5ms latency jitter is measurement noise, not a real change.
+    if abs(post_latency - pre_latency) < 0.5:
+        lat_change_pct = 0.0
+
+    # Guard: after a UPF restart the probe can fail (latency 0.00ms + high loss). Not an improvement.
+    if post_latency <= 0 or (post_loss or 0) > (pre_loss or 0) + 5.0:
+        return VerificationResult(
+            slice_name, action_id, VerificationOutcome.INCONCLUSIVE,
+            detail + " -- probe failed or loss increased (UPF likely still restarting), not counted as improvement",
+        )
+
     if lat_change_pct <= -margin:
         outcome = VerificationOutcome.IMPROVED
     elif lat_change_pct >= margin:

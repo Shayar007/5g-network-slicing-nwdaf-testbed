@@ -1,0 +1,12 @@
+[Unit]
+Description=kubectl port-forward Pushgateway -> localhost:9091
+After=network.target k3s.service
+
+[Service]
+Environment=KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+ExecStart=/usr/local/bin/kubectl port-forward -n osm svc/pushgateway-prometheus-pushgateway 9091:9091
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

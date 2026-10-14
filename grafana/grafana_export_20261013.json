@@ -1,0 +1,192 @@
+[
+ {
+  "meta": {
+   "type": "db",
+   "canSave": true,
+   "canEdit": true,
+   "canAdmin": true,
+   "canStar": true,
+   "canDelete": true,
+   "slug": "5g-slice-upf-dashboard",
+   "url": "/d/slice-upf-dashboard/5g-slice-upf-dashboard",
+   "expires": "0001-01-01T00:00:00Z",
+   "created": "2026-09-17T04:33:53Z",
+   "updated": "2026-09-17T04:33:53Z",
+   "updatedBy": "Anonymous",
+   "createdBy": "Anonymous",
+   "version": 1,
+   "hasAcl": false,
+   "isFolder": false,
+   "folderId": 0,
+   "folderUid": "",
+   "folderTitle": "General",
+   "folderUrl": "",
+   "provisioned": true,
+   "provisionedExternalId": "slice-dashboard.json",
+   "annotationsPermissions": {
+    "dashboard": {
+     "canAdd": true,
+     "canEdit": true,
+     "canDelete": true
+    },
+    "organization": {
+     "canAdd": true,
+     "canEdit": true,
+     "canDelete": true
+    }
+   }
+  },
+  "dashboard": {
+   "id": 3,
+   "panels": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "PABE7395EEDBDAD88"
+     },
+     "gridPos": {
+      "h": 8,
+      "w": 12,
+      "x": 0,
+      "y": 0
+     },
+     "id": 1,
+     "targets": [
+      {
+       "expr": "slice_flow_count",
+       "legendFormat": "{{slice}}",
+       "refId": "A"
+      }
+     ],
+     "title": "Flow Count per Slice",
+     "type": "timeseries"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "PABE7395EEDBDAD88"
+     },
+     "gridPos": {
+      "h": 8,
+      "w": 12,
+      "x": 12,
+      "y": 0
+     },
+     "id": 2,
+     "targets": [
+      {
+       "expr": "slice_gbr_flows",
+       "legendFormat": "{{slice}} ({{upf}})",
+       "refId": "A"
+      }
+     ],
+     "title": "GBR Flows per Slice",
+     "type": "timeseries"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "PABE7395EEDBDAD88"
+     },
+     "gridPos": {
+      "h": 8,
+      "w": 12,
+      "x": 0,
+      "y": 8
+     },
+     "id": 3,
+     "targets": [
+      {
+       "expr": "slice_throughput_kbps",
+       "legendFormat": "{{slice}}",
+       "refId": "A"
+      }
+     ],
+     "title": "Throughput per Slice (kbps)",
+     "type": "timeseries"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "PABE7395EEDBDAD88"
+     },
+     "fieldConfig": {
+      "defaults": {
+       "mappings": [
+        {
+         "options": {
+          "0": {
+           "color": "red",
+           "text": "DOWN"
+          },
+          "1": {
+           "color": "green",
+           "text": "UP"
+          }
+         },
+         "type": "value"
+        }
+       ]
+      }
+     },
+     "gridPos": {
+      "h": 8,
+      "w": 12,
+      "x": 12,
+      "y": 8
+     },
+     "id": 4,
+     "targets": [
+      {
+       "expr": "slice_upf_up",
+       "legendFormat": "{{slice}} \u2014 {{upf}}",
+       "refId": "A"
+      }
+     ],
+     "title": "UPF Active Status per Slice",
+     "type": "stat"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "PABE7395EEDBDAD88"
+     },
+     "gridPos": {
+      "h": 8,
+      "w": 24,
+      "x": 0,
+      "y": 16
+     },
+     "id": 5,
+     "targets": [
+      {
+       "expr": "slice_ue_count",
+       "legendFormat": "{{slice}} \u2014 UE count",
+       "refId": "A"
+      },
+      {
+       "expr": "slice_ue_threshold",
+       "legendFormat": "{{slice}} \u2014 threshold",
+       "refId": "B"
+      }
+     ],
+     "title": "UE Count vs Threshold per Slice",
+     "type": "timeseries"
+    }
+   ],
+   "refresh": "5s",
+   "tags": [
+    "slicing",
+    "oai"
+   ],
+   "time": {
+    "from": "now-15m",
+    "to": "now"
+   },
+   "timezone": "browser",
+   "title": "5G Slice / UPF Dashboard",
+   "uid": "slice-upf-dashboard",
+   "version": 1
+  }
+ }
+]

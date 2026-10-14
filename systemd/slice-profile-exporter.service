@@ -1,0 +1,14 @@
+[Unit]
+Description=Slice profile exporter (slice_profile.json -> Pushgateway: flow count, throughput, GBR, UPF up)
+After=network.target k3s.service pushgateway-forward.service
+
+[Service]
+Environment=PYTHONUNBUFFERED=1
+Environment=KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+WorkingDirectory=/home/comm/slice-test
+ExecStart=/home/comm/slice-test/slice-env/bin/python3 /home/comm/slice-test/live_slice_exporter.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

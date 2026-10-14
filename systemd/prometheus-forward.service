@@ -1,0 +1,12 @@
+[Unit]
+Description=kubectl port-forward Prometheus -> localhost:9090
+After=network.target k3s.service
+
+[Service]
+Environment=KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+ExecStart=/usr/local/bin/kubectl port-forward -n osm svc/prometheus 9090:9090
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
