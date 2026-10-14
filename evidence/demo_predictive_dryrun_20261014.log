@@ -1,0 +1,15 @@
+closed_loop_controller: backend=kubectl, poll every 30s, slices=['embb', 'urllc', 'mmtc']
+[mmtc  ] ue=4.0 lat=1.102 loss=0.0 forecast_ok=True -> SCALE_UP (predictive: forecast [4.5, 5.0, 5.4] crosses threshold 5 before current count does)
+[mano:kubectl] kubectl-mmtc-up-2a21b318: kubectl rollout restart deployment/oai-upf-auto-auto01 -n oai
+[mano:kubectl] kubectl-mmtc-up-2a21b318: DRY-RUN -- decision made, UPF not touched (demo mode)
+[verifier] kubectl-mmtc-up-2a21b318: waiting 30s before re-checking mmtc QoS
+[verifier] kubectl-mmtc-up-2a21b318: NO_CHANGE -- latency 1.10ms -> 1.16ms (+5.5%), loss 0.0% -> 0.0%
+[mmtc  ] ue=5.0 lat=0.807 loss=0.0 forecast_ok=True -> HOLD (post-action grace (UPF restarting) -- QoS guardrail paused for 120s)
+[mmtc  ] ue=2.0 lat=1.804 loss=0.0 forecast_ok=True -> HOLD (post-action grace (UPF restarting) -- QoS guardrail paused for 120s)
+[mmtc  ] ue=2.0 lat=0.787 loss=0.0 forecast_ok=True -> SCALE_DOWN (reactive: ue_count 2.0 <= down-threshold 3.0, reverting scale-up)
+[mano:kubectl] kubectl-mmtc-down-840c6276: kubectl rollout restart deployment/oai-upf-auto-auto01 -n oai
+[mano:kubectl] kubectl-mmtc-down-840c6276: DRY-RUN -- decision made, UPF not touched (demo mode)
+[verifier] kubectl-mmtc-down-840c6276: waiting 30s before re-checking mmtc QoS
+[verifier] kubectl-mmtc-down-840c6276: NO_CHANGE -- latency 0.79ms -> 0.81ms (+2.4%), loss 0.0% -> 0.0%
+[mmtc  ] ue=2.0 lat=1.109 loss=0.0 forecast_ok=True -> HOLD (post-action grace (UPF restarting) -- QoS guardrail paused for 120s)
+[mmtc  ] ue=2.0 lat=1.019 loss=0.0 forecast_ok=True -> HOLD (post-action grace (UPF restarting) -- QoS guardrail paused for 120s)
