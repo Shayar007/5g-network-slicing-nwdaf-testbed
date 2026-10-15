@@ -1,0 +1,13 @@
+[Unit]
+Description=Helm chart repo for OSM KNFs (http.server :8090)
+After=network.target
+
+[Service]
+User=comm
+WorkingDirectory=/home/comm/osm-scale-test/charts
+ExecStart=/usr/bin/python3 -m http.server 8090 --directory /home/comm/osm-scale-test/charts
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

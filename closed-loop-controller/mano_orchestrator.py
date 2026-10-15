@@ -53,6 +53,10 @@ class KubectlBackend(OrchestratorBackend):
         cmd = ["kubectl", "rollout", "restart",
                f"deployment/{deployment}", "-n", CFG.K8S_NAMESPACE]
         print(f"[mano:kubectl] {action_id}: {' '.join(cmd)}")
+        import os
+        if os.getenv("DEMO_DRY_RUN") == "1":
+            print(f"[mano:kubectl] {action_id}: DRY-RUN -- decision made, UPF not touched (demo mode)")
+            return action_id
         try:
             subprocess.run(cmd, capture_output=True, text=True, timeout=30, check=True)
         except subprocess.CalledProcessError as e:
@@ -62,80 +66,45 @@ class KubectlBackend(OrchestratorBackend):
 
 class OSMBackend(OrchestratorBackend):
     """
-    Talks to OSM's NBI (North Bound Interface) REST API to scale a real
-    NS (Network Service) instance instead of raw kubectl. This is the
-    "proper" Layer-5 implementation once wired.
-
-    TODO before use:
-      1. Confirm OSM NBI is reachable (currently osm-nbi pod is Running in
-         cluster but you'll likely need `kubectl port-forward -n osm
-         svc/nbi 9999:9999` or an ingress, matching OSM_NBI_URL in config.py).
-      2. Set OSM_USER / OSM_PASSWORD / OSM_PROJECT env vars.
-      3. Set OSM_NS_EMBB / OSM_NS_URLLC / OSM_NS_MMTC to the actual NS
-         instance names/IDs (`osm ns-list` on the OSM host, or via NBI
-         GET /osm/nslcm/v1/ns_instances).
-      4. Confirm the VNF's scaling-group-descriptor name in the VNFD (OSM
-         scales via named scaling groups, not raw replica counts) and set
-         it below where marked.
+    OSM MANO actuation: a scale decision becomes an OSM scale operation (via the osm client / NBI)
+    on the slice's scaling group; replica convergence is then verified on the cluster.
+    Slices with no OSM NS configured fall back to KubectlBackend (which honours DEMO_DRY_RUN).
     """
 
-    def __init__(self):
-        self._token = None
-        self._token_expiry = 0
-
-    def _authenticate(self):
-        import requests
-        if self._token and time.time() < self._token_expiry:
-            return self._token
-        resp = requests.post(
-            f"{CFG.OSM_NBI_URL}/admin/v1/tokens",
-            json={
-                "username": CFG.OSM_USER,
-                "password": CFG.OSM_PASSWORD,
-                "project_id": CFG.OSM_PROJECT,
-            },
-            headers={"Accept": "application/json"},  # OSM defaults to YAML otherwise
-            timeout=10,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        self._token = data["id"]
-        self._token_expiry = time.time() + data.get("expires", 3600) - 30
-        return self._token
+    def _ready(self, dep, ns):
+        r = subprocess.run(["kubectl", "get", "deploy", dep, "-n", ns, "-o", "jsonpath={.status.readyReplicas}"],
+                           capture_output=True, text=True, timeout=20)
+        return int(r.stdout.strip() or 0)
 
     def scale_slice(self, slice_name: str, direction: str) -> str:
-        import requests
-
-        ns_id = CFG.OSM_NS_NAME.get(slice_name)
-        if not ns_id:
-            raise RuntimeError(
-                f"OSM_NS_{slice_name.upper()} not configured -- set the env var "
-                f"to the real NS instance id before using OSMBackend"
-            )
-
-        token = self._authenticate()
+        import os
+        ns_name = CFG.OSM_NS_NAME.get(slice_name)
+        if not ns_name:
+            return KubectlBackend().scale_slice(slice_name, direction)
         action_id = f"osm-{slice_name}-{direction}-{uuid.uuid4().hex[:8]}"
-
-        # TODO: replace "default-scaling-group" with the actual
-        # scaling-group-descriptor name defined in your VNFD.
-        payload = {
-            "scaleType": "SCALE_VNF",
-            "scaleVnfData": {
-                "scaleVnfType": "SCALE_OUT" if direction == "up" else "SCALE_IN",
-                "scaleByStepData": {
-                    "scaling-group-descriptor": "default-scaling-group",
-                },
-            },
-        }
-        print(f"[mano:osm] {action_id}: scaling NS {ns_id} ({direction})")
-        resp = requests.post(
-            f"{CFG.OSM_NBI_URL}/nslcm/v1/ns_instances/{ns_id}/scale",
-            json=payload,
-            headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
-            timeout=30,
-        )
-        if resp.status_code >= 300:
-            print(f"[mano:osm] {action_id} FAILED: {resp.status_code} {resp.text[:300]}")
+        dep = os.getenv("OSM_KDU_DEPLOY", "scalable-echo")
+        kns = os.getenv("OSM_KDU_NS", "")
+        vnf = os.getenv("OSM_VNF_INDEX", "echo_vnf")
+        group = os.getenv("OSM_SCALING_GROUP", "echo-scale")
+        before = self._ready(dep, kns)
+        if direction == "down" and before <= 1:
+            print(f"[mano:osm] {action_id}: scale-in skipped, already at minimum ({before} replica)", flush=True)
+            return action_id
+        flag = "--scale-out" if direction == "up" else "--scale-in"
+        target = before + 1 if direction == "up" else before - 1
+        cmd = ["osm", "vnf-scale", ns_name, vnf, "--scaling-group", group, flag]
+        print(f"[mano:osm] {action_id}: {' '.join(cmd)} (replicas {before} -> {target})", flush=True)
+        t0 = time.time()
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=90)
+        if r.returncode != 0:
+            print(f"[mano:osm] {action_id} FAILED: {(r.stdout + r.stderr)[:300]}", flush=True)
+            return action_id
+        while time.time() - t0 < 150:
+            if self._ready(dep, kns) == target:
+                print(f"[mano:osm] {action_id}: OSM scale op converged, {dep} ready replicas {before} -> {target} in {time.time() - t0:.1f}s", flush=True)
+                return action_id
+            time.sleep(3)
+        print(f"[mano:osm] {action_id}: replicas did not reach {target} within 150s", flush=True)
         return action_id
 
 

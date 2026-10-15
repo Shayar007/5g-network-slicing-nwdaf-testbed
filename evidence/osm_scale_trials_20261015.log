@@ -1,0 +1,10 @@
+[mano:osm] osm-mmtc-up-6a6e70df: OSM scale op converged, scalable-echo ready replicas 1 -> 2 in 8.7s
+[mano:osm] osm-mmtc-down-d8b84c08: OSM scale op converged, scalable-echo ready replicas 2 -> 1 in 9.8s
+[mano:osm] osm-mmtc-up-c603acc9: OSM scale op converged, scalable-echo ready replicas 1 -> 2 in 12.3s
+[mano:osm] osm-mmtc-down-42df72d4: OSM scale op converged, scalable-echo ready replicas 2 -> 1 in 9.6s
+[mano:osm] osm-mmtc-up-095c6fa4: OSM scale op converged, scalable-echo ready replicas 1 -> 2 in 11.9s
+[mano:osm] osm-mmtc-down-e9927676: OSM scale op converged, scalable-echo ready replicas 2 -> 1 in 9.7s
+[mano:osm] osm-mmtc-up-dd0b85c8: OSM scale op converged, scalable-echo ready replicas 1 -> 2 in 12.0s
+[mano:osm] osm-mmtc-down-a6ab2ddf: OSM scale op converged, scalable-echo ready replicas 2 -> 1 in 9.9s
+[mano:osm] osm-mmtc-up-dc286e2e: OSM scale op converged, scalable-echo ready replicas 1 -> 2 in 12.3s
+[mano:osm] osm-mmtc-down-f6fa9aee: OSM scale op converged, scalable-echo ready replicas 2 -> 1 in 9.7s
