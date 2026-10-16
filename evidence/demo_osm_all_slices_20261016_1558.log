@@ -1,0 +1,24 @@
+2026-10-16T15:38:13+05:30 comm-precision-3490 python3[2949608]: [embb  ] ue=8.0 lat=1.011 loss=0.0 forecast_ok=True -> SCALE_UP (predictive: forecast [8.7, 9.4, 10.1] crosses threshold 10 before current count does)
+2026-10-16T15:38:13+05:30 comm-precision-3490 python3[2949608]: [mano:osm] osm-embb-up-228f7b6d: osm vnf-scale scalable-echo-embb echo_vnf --scaling-group echo-scale --scale-out (replicas 1 -> 2)
+2026-10-16T15:38:21+05:30 comm-precision-3490 python3[2949608]: [mano:osm] osm-embb-up-228f7b6d: OSM scale op converged, scalable-echo ready replicas 1 -> 2 in 7.8s
+2026-10-16T15:38:21+05:30 comm-precision-3490 python3[2949608]: [verifier] osm-embb-up-228f7b6d: NOT_EVALUATED -- OSM scaled the slice's KNF (convergence checked by the backend); slice QoS is not expected to change since the UPF is not scaled
+2026-10-16T15:38:51+05:30 comm-precision-3490 python3[2949608]: [urllc ] ue=3.0 lat=1.089 loss=0.0 forecast_ok=True -> SCALE_UP (reactive: ue_count 3.0 >= threshold 3)
+2026-10-16T15:38:51+05:30 comm-precision-3490 python3[2949608]: [mano:osm] osm-urllc-up-bbbfea4a: osm vnf-scale scalable-echo-urllc echo_vnf --scaling-group echo-scale --scale-out (replicas 1 -> 2)
+2026-10-16T15:38:59+05:30 comm-precision-3490 python3[2949608]: [mano:osm] osm-urllc-up-bbbfea4a: OSM scale op converged, scalable-echo ready replicas 1 -> 2 in 7.8s
+2026-10-16T15:38:59+05:30 comm-precision-3490 python3[2949608]: [verifier] osm-urllc-up-bbbfea4a: NOT_EVALUATED -- OSM scaled the slice's KNF (convergence checked by the backend); slice QoS is not expected to change since the UPF is not scaled
+2026-10-16T15:38:59+05:30 comm-precision-3490 python3[2949608]: [mmtc  ] ue=5.0 lat=0.873 loss=0.0 forecast_ok=True -> SCALE_UP (reactive: ue_count 5.0 >= threshold 5)
+2026-10-16T15:38:59+05:30 comm-precision-3490 python3[2949608]: [mano:osm] osm-mmtc-up-b439a9b1: osm vnf-scale scalable-echo-test echo_vnf --scaling-group echo-scale --scale-out (replicas 1 -> 2)
+2026-10-16T15:39:12+05:30 comm-precision-3490 python3[2949608]: [mano:osm] osm-mmtc-up-b439a9b1: OSM scale op converged, scalable-echo ready replicas 1 -> 2 in 12.8s
+2026-10-16T15:39:12+05:30 comm-precision-3490 python3[2949608]: [verifier] osm-mmtc-up-b439a9b1: NOT_EVALUATED -- OSM scaled the slice's KNF (convergence checked by the backend); slice QoS is not expected to change since the UPF is not scaled
+2026-10-16T15:49:42+05:30 comm-precision-3490 python3[2949608]: [embb  ] ue=3.0 lat=0.992 loss=0.0 forecast_ok=True -> SCALE_DOWN (reactive: ue_count 3.0 <= down-threshold 6.0, reverting scale-up)
+2026-10-16T15:49:42+05:30 comm-precision-3490 python3[2949608]: [mano:osm] osm-embb-down-ff8674a6: osm vnf-scale scalable-echo-embb echo_vnf --scaling-group echo-scale --scale-in (replicas 2 -> 1)
+2026-10-16T15:49:50+05:30 comm-precision-3490 python3[2949608]: [mano:osm] osm-embb-down-ff8674a6: OSM scale op converged, scalable-echo ready replicas 2 -> 1 in 7.8s
+2026-10-16T15:49:50+05:30 comm-precision-3490 python3[2949608]: [verifier] osm-embb-down-ff8674a6: NOT_EVALUATED -- OSM scaled the slice's KNF (convergence checked by the backend); slice QoS is not expected to change since the UPF is not scaled
+2026-10-16T15:49:50+05:30 comm-precision-3490 python3[2949608]: [urllc ] ue=1.0 lat=1.432 loss=0.0 forecast_ok=True -> SCALE_DOWN (reactive: ue_count 1.0 <= down-threshold 1.8, reverting scale-up)
+2026-10-16T15:49:50+05:30 comm-precision-3490 python3[2949608]: [mano:osm] osm-urllc-down-67ea32d7: osm vnf-scale scalable-echo-urllc echo_vnf --scaling-group echo-scale --scale-in (replicas 2 -> 1)
+2026-10-16T15:50:03+05:30 comm-precision-3490 python3[2949608]: [mano:osm] osm-urllc-down-67ea32d7: OSM scale op converged, scalable-echo ready replicas 2 -> 1 in 12.8s
+2026-10-16T15:50:03+05:30 comm-precision-3490 python3[2949608]: [verifier] osm-urllc-down-67ea32d7: NOT_EVALUATED -- OSM scaled the slice's KNF (convergence checked by the backend); slice QoS is not expected to change since the UPF is not scaled
+2026-10-16T15:50:03+05:30 comm-precision-3490 python3[2949608]: [mmtc  ] ue=2.0 lat=0.996 loss=0.0 forecast_ok=True -> SCALE_DOWN (reactive: ue_count 2.0 <= down-threshold 3.0, reverting scale-up)
+2026-10-16T15:50:03+05:30 comm-precision-3490 python3[2949608]: [mano:osm] osm-mmtc-down-5ad79d9e: osm vnf-scale scalable-echo-test echo_vnf --scaling-group echo-scale --scale-in (replicas 2 -> 1)
+2026-10-16T15:50:10+05:30 comm-precision-3490 python3[2949608]: [mano:osm] osm-mmtc-down-5ad79d9e: OSM scale op converged, scalable-echo ready replicas 2 -> 1 in 7.7s
+2026-10-16T15:50:10+05:30 comm-precision-3490 python3[2949608]: [verifier] osm-mmtc-down-5ad79d9e: NOT_EVALUATED -- OSM scaled the slice's KNF (convergence checked by the backend); slice QoS is not expected to change since the UPF is not scaled
