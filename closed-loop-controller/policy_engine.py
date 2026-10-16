@@ -81,7 +81,7 @@ class PolicyEngine:
         # Post-action grace: a UPF rollout-restart makes probes fail transiently (lat=0, loss=100) -- not a new QoS breach.
         if time.time() - self._last_action_ts[slice_name] < 120:
             return Decision(slice_name, Action.HOLD,
-                            "post-action grace (UPF restarting) -- QoS guardrail paused for 120s")
+                            "post-action grace -- decisions paused for 120s")
 
         if a.latency_anomaly or a.loss_anomaly:
             if self._scaled[slice_name]:

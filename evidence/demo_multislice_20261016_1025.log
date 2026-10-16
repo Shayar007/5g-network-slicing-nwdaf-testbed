@@ -1,0 +1,28 @@
+2026-10-16T10:14:31+05:30 comm-precision-3490 python3[3159029]: [mmtc  ] ue=1.0 lat=1.162 loss=0.0 forecast_ok=True -> SCALE_DOWN (reactive: ue_count 1.0 <= down-threshold 3.0, reverting scale-up)
+2026-10-16T10:14:31+05:30 comm-precision-3490 python3[3159029]: [mano:osm] osm-mmtc-down-7f3ea7a9: osm vnf-scale scalable-echo-test echo_vnf --scaling-group echo-scale --scale-in (replicas 2 -> 1)
+2026-10-16T10:14:39+05:30 comm-precision-3490 python3[3159029]: [mano:osm] osm-mmtc-down-7f3ea7a9: OSM scale op converged, scalable-echo ready replicas 2 -> 1 in 7.8s
+2026-10-16T10:14:39+05:30 comm-precision-3490 python3[3159029]: [verifier] osm-mmtc-down-7f3ea7a9: NOT_EVALUATED -- OSM scaled the slice's KNF (convergence checked by the backend); slice QoS is not expected to change since the UPF is not scaled
+2026-10-16T10:17:39+05:30 comm-precision-3490 python3[3159029]: [embb  ] ue=9.0 lat=1.55 loss=0.0 forecast_ok=True -> SCALE_UP (predictive: forecast [9.6, 10.3, 11.0] crosses threshold 10 before current count does)
+2026-10-16T10:17:39+05:30 comm-precision-3490 python3[3159029]: [mano:kubectl] kubectl-embb-up-9b92f107: kubectl rollout restart deployment/oai-upf -n oai
+2026-10-16T10:17:39+05:30 comm-precision-3490 python3[3159029]: [mano:kubectl] kubectl-embb-up-9b92f107: DRY-RUN -- decision made, UPF not touched (demo mode)
+2026-10-16T10:17:39+05:30 comm-precision-3490 python3[3159029]: [verifier] kubectl-embb-up-9b92f107: NOT_EVALUATED -- DRY-RUN: no action was applied, nothing to verify
+2026-10-16T10:17:39+05:30 comm-precision-3490 python3[3159029]: [urllc ] ue=3.0 lat=1.146 loss=0.0 forecast_ok=True -> SCALE_UP (reactive: ue_count 3.0 >= threshold 3)
+2026-10-16T10:17:39+05:30 comm-precision-3490 python3[3159029]: [mano:kubectl] kubectl-urllc-up-00fd7a78: kubectl rollout restart deployment/oai-upf2 -n oai
+2026-10-16T10:17:39+05:30 comm-precision-3490 python3[3159029]: [mano:kubectl] kubectl-urllc-up-00fd7a78: DRY-RUN -- decision made, UPF not touched (demo mode)
+2026-10-16T10:17:39+05:30 comm-precision-3490 python3[3159029]: [verifier] kubectl-urllc-up-00fd7a78: NOT_EVALUATED -- DRY-RUN: no action was applied, nothing to verify
+2026-10-16T10:17:39+05:30 comm-precision-3490 python3[3159029]: [mmtc  ] ue=5.0 lat=0.882 loss=0.0 forecast_ok=True -> SCALE_UP (reactive: ue_count 5.0 >= threshold 5)
+2026-10-16T10:17:39+05:30 comm-precision-3490 python3[3159029]: [mano:osm] osm-mmtc-up-2d7f1f5c: osm vnf-scale scalable-echo-test echo_vnf --scaling-group echo-scale --scale-out (replicas 1 -> 2)
+2026-10-16T10:17:46+05:30 comm-precision-3490 python3[3159029]: [mano:osm] osm-mmtc-up-2d7f1f5c: OSM scale op converged, scalable-echo ready replicas 1 -> 2 in 7.7s
+2026-10-16T10:17:46+05:30 comm-precision-3490 python3[3159029]: [verifier] osm-mmtc-up-2d7f1f5c: NOT_EVALUATED -- OSM scaled the slice's KNF (convergence checked by the backend); slice QoS is not expected to change since the UPF is not scaled
+2026-10-16T10:22:46+05:30 comm-precision-3490 python3[3159029]: [embb  ] ue=3.0 lat=0.877 loss=0.0 forecast_ok=True -> SCALE_DOWN (reactive: ue_count 3.0 <= down-threshold 6.0, reverting scale-up)
+2026-10-16T10:22:46+05:30 comm-precision-3490 python3[3159029]: [mano:kubectl] kubectl-embb-down-40360771: kubectl rollout restart deployment/oai-upf -n oai
+2026-10-16T10:22:46+05:30 comm-precision-3490 python3[3159029]: [mano:kubectl] kubectl-embb-down-40360771: DRY-RUN -- decision made, UPF not touched (demo mode)
+2026-10-16T10:22:46+05:30 comm-precision-3490 python3[3159029]: [verifier] kubectl-embb-down-40360771: NOT_EVALUATED -- DRY-RUN: no action was applied, nothing to verify
+2026-10-16T10:22:47+05:30 comm-precision-3490 python3[3159029]: [urllc ] ue=1.0 lat=0.899 loss=0.0 forecast_ok=True -> SCALE_DOWN (reactive: ue_count 1.0 <= down-threshold 1.8, reverting scale-up)
+2026-10-16T10:22:47+05:30 comm-precision-3490 python3[3159029]: [mano:kubectl] kubectl-urllc-down-d3bec621: kubectl rollout restart deployment/oai-upf2 -n oai
+2026-10-16T10:22:47+05:30 comm-precision-3490 python3[3159029]: [mano:kubectl] kubectl-urllc-down-d3bec621: DRY-RUN -- decision made, UPF not touched (demo mode)
+2026-10-16T10:22:47+05:30 comm-precision-3490 python3[3159029]: [verifier] kubectl-urllc-down-d3bec621: NOT_EVALUATED -- DRY-RUN: no action was applied, nothing to verify
+2026-10-16T10:22:47+05:30 comm-precision-3490 python3[3159029]: [mmtc  ] ue=2.0 lat=0.749 loss=0.0 forecast_ok=True -> SCALE_DOWN (reactive: ue_count 2.0 <= down-threshold 3.0, reverting scale-up)
+2026-10-16T10:22:47+05:30 comm-precision-3490 python3[3159029]: [mano:osm] osm-mmtc-down-c7d3707e: osm vnf-scale scalable-echo-test echo_vnf --scaling-group echo-scale --scale-in (replicas 2 -> 1)
+2026-10-16T10:22:54+05:30 comm-precision-3490 python3[3159029]: [mano:osm] osm-mmtc-down-c7d3707e: OSM scale op converged, scalable-echo ready replicas 2 -> 1 in 7.8s
+2026-10-16T10:22:54+05:30 comm-precision-3490 python3[3159029]: [verifier] osm-mmtc-down-c7d3707e: NOT_EVALUATED -- OSM scaled the slice's KNF (convergence checked by the backend); slice QoS is not expected to change since the UPF is not scaled

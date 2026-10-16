@@ -47,6 +47,13 @@ def verify_action(slice_name: str, action_id: str, direction: str,
                    orchestrator: OrchestratorBackend,
                    wait_s=None) -> VerificationResult:
     wait_s = wait_s or CFG.VERIFY_WAIT_S
+    import os
+    _osm = action_id.startswith("osm-")
+    if _osm or (os.getenv("DEMO_DRY_RUN") == "1" and action_id.startswith("kubectl-")):
+        why = ("OSM scaled the slice's KNF (convergence checked by the backend); slice QoS is not expected to change since the UPF is not scaled"
+               if _osm else "DRY-RUN: no action was applied, nothing to verify")
+        print(f"[verifier] {action_id}: NOT_EVALUATED -- {why}", flush=True)
+        return VerificationResult(slice_name, action_id, VerificationOutcome.INCONCLUSIVE, why)
     print(f"[verifier] {action_id}: waiting {wait_s}s before re-checking {slice_name} QoS")
     time.sleep(wait_s)
 
