@@ -83,7 +83,7 @@ class OSMBackend(OrchestratorBackend):
             return KubectlBackend().scale_slice(slice_name, direction)
         action_id = f"osm-{slice_name}-{direction}-{uuid.uuid4().hex[:8]}"
         dep = os.getenv("OSM_KDU_DEPLOY", "scalable-echo")
-        kns = os.getenv("OSM_KDU_NS", "")
+        kns = os.getenv(f"OSM_KDU_NS_{slice_name.upper()}") or os.getenv("OSM_KDU_NS", "")
         vnf = os.getenv("OSM_VNF_INDEX", "echo_vnf")
         group = os.getenv("OSM_SCALING_GROUP", "echo-scale")
         before = self._ready(dep, kns)
