@@ -1,0 +1,12 @@
+== 2026-10-19T15:19:25+05:30  smf log lines before: 1003
+trial 1: NS=READY instantiate=30.9 s
+-- NRF log (UPF registration lines)
+[2026-10-19 09:47:34.497] [nrf_app] [debug] 	Subscription condition: Type: NF_TYPE_COND, condition: UPF
+[2026-10-19 09:49:33.648] [nrf_app] [debug] 	Instance name: OAI-UPF
+[2026-10-19 09:49:34.654] [nrf_app] [debug] 	Instance name: OAI-UPF
+[2026-10-19 09:49:34.654] [nrf_app] [debug] 	Instance type: UPF
+[2026-10-19 09:49:34.654] [nrf_app] [info] Added/Updated NF Instance, NF info: {"capacity":100,"heartBeatTimer":10,"ipv4Addresses":["10.42.0.13"],"json_data":null,"nfInst
+-- SMF log lines about the new UPF
+-- SMF restarts: 2
+trial 2: NS=READY instantiate=30.9 s
+trial 3: NS=READY instantiate=30.8 s
