@@ -1,0 +1,13 @@
+== 2026-10-19T15:17:04+05:30
+== OSM instantiate time for the UPF NS
+instantiate: 31.0 s
+== UPFs registered at the live NRF (queried from the SMF container)
+empty reply (no curl in the SMF container, or NRF refused)
+== how the SMF learns UPFs (startup log)
+== live core
+oai-amf-7954d586b6-slg2g 1/1 Running restarts=0
+oai-nrf-7686f4c587-nstsr 1/1 Running restarts=2
+oai-smf-5645dc5cd6-s56kr 1/1 Running restarts=1
+oai-upf-auto-auto01-cd78886d8-tx795 1/1 Running restarts=0
+oai-upf-f68c6cdf-gl5xw 1/1 Running restarts=0
+oai-upf2-78bc856f6c-z78gq 1/1 Running restarts=0
