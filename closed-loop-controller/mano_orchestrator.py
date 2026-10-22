@@ -90,6 +90,9 @@ class OSMBackend(OrchestratorBackend):
         if direction == "down" and before <= 1:
             print(f"[mano:osm] {action_id}: scale-in skipped, already at minimum ({before} replica)", flush=True)
             return action_id
+        if direction == "up" and before >= int(os.getenv("POLICY_MAX_REPLICAS", "4")):
+            print(f"[mano:osm] {action_id}: scale-out skipped, at max replicas ({before})", flush=True)
+            return action_id
         flag = "--scale-out" if direction == "up" else "--scale-in"
         target = before + 1 if direction == "up" else before - 1
         cmd = ["osm", "vnf-scale", ns_name, vnf, "--scaling-group", group, flag]

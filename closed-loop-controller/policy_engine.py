@@ -106,7 +106,20 @@ class PolicyEngine:
             return Decision(slice_name, Action.HOLD, "no current ue_count data")
 
         if self._scaled[slice_name]:
-            if a.ue_count <= down_thresh:
+            lv = self.__dict__.setdefault("_lvl", {})
+            lvl = lv.get(slice_name, 2)
+            max_rep = int(os.getenv("POLICY_MAX_REPLICAS", "4"))
+            if lvl < max_rep and a.ue_count >= up_thresh * lvl:
+                self._record_action(slice_name)
+                lv[slice_name] = lvl + 1
+                return Decision(slice_name, Action.SCALE_UP,
+                                 f"multi-step: ue_count {a.ue_count} >= {up_thresh * lvl} (level {lvl} -> {lvl + 1}, max {max_rep})")
+            if lvl > 2 and a.ue_count <= up_thresh * (lvl - 1) * (1 - CFG.THRESHOLD_DOWN_MARGIN):
+                self._record_action(slice_name)
+                lv[slice_name] = lvl - 1
+                return Decision(slice_name, Action.SCALE_DOWN,
+                                 f"multi-step: ue_count {a.ue_count} low (level {lvl} -> {lvl - 1})")
+            if lvl <= 2 and a.ue_count <= down_thresh:
                 self._record_action(slice_name)
                 self._set_scaled(slice_name, False)
                 return Decision(slice_name, Action.SCALE_DOWN,

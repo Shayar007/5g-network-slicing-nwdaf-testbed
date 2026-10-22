@@ -1,0 +1,20 @@
+== 1. what LCM's helm cache lists now
+No results found
+== 2. delete the registered pilot UPF (controlled replicate of the SMF crash)
+SMF restarts before: 5   now (UTC): 04:32:34
+SMF restarts after:  6
+Error exit=139 at=2026-10-21T04:32:43Z
+[2026-10-21 04:32:41.714] [smf_api] [info] NFStatusNotifyApiImpl, received a NF status notification...
+[2026-10-21 04:32:41.714] [smf_app] [debug] Convert NotificationData (OpenAPI) to Data Notification Msg
+== 3. refresh LCM's helm repo cache
+...Successfully got an update from the "scalable-echo-repo" chart repository
+...Successfully got an update from the "stable" chart repository
+Update Complete. ⎈Happy Helming!⎈
+NAME                          	CHART VERSION	APP VERSION	DESCRIPTION                                       
+scalable-echo-repo/osm-oai-upf	1.1.0        	v2.1.0     	OAI UPF mirrored from live oai-upf deployment f...
+scalable-echo-repo/osm-oai-upf	1.0.0        	v2.1.0     	OAI UPF mirrored from live oai-upf deployment f...
+== 4. pilot with registerNf=no
+SMF restarts before: 6
+NS: READY
+config says: register_nf:general:yes
+STOP: pilot ab bhi register_nf=yes ke saath bana. Delete mat karo, naye pilot ko yahin chhod do.

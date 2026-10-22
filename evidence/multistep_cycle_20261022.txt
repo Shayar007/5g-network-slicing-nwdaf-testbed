@@ -1,0 +1,51 @@
+[embb  ] ue=33.0 lat=1.353 loss=0.0 forecast_ok=True -> SCALE_UP (reactive: ue_count 33.0 >= threshold 10)
+[mano:osm] osm-embb-up-a96f40e5: osm vnf-scale scalable-echo-embb echo_vnf --scaling-group echo-scale --scale-out (replicas 1 -> 2)
+[mano:osm] osm-embb-up-a96f40e5: OSM scale op converged, scalable-echo ready replicas 1 -> 2 in 7.8s
+[urllc ] ue=10.0 lat=0.947 loss=0.0 forecast_ok=True -> SCALE_UP (reactive: ue_count 10.0 >= threshold 3)
+[mano:osm] osm-urllc-up-4772d1a7: osm vnf-scale scalable-echo-urllc echo_vnf --scaling-group echo-scale --scale-out (replicas 1 -> 2)
+[mano:osm] osm-urllc-up-4772d1a7: OSM scale op converged, scalable-echo ready replicas 1 -> 2 in 7.7s
+[mmtc  ] ue=17.0 lat=1.482 loss=0.0 forecast_ok=True -> SCALE_UP (reactive: ue_count 17.0 >= threshold 5)
+[mano:osm] osm-mmtc-up-3b662270: osm vnf-scale scalable-echo-test echo_vnf --scaling-group echo-scale --scale-out (replicas 1 -> 2)
+[mano:osm] osm-mmtc-up-3b662270: OSM scale op converged, scalable-echo ready replicas 1 -> 2 in 7.8s
+[embb  ] ue=33.0 lat=0.895 loss=0.0 forecast_ok=True -> SCALE_UP (multi-step: ue_count 33.0 >= 20 (level 2 -> 3, max 4))
+[mano:osm] osm-embb-up-e2f4976d: osm vnf-scale scalable-echo-embb echo_vnf --scaling-group echo-scale --scale-out (replicas 2 -> 3)
+[mano:osm] osm-embb-up-e2f4976d: OSM scale op converged, scalable-echo ready replicas 2 -> 3 in 7.7s
+[urllc ] ue=10.0 lat=0.859 loss=0.0 forecast_ok=True -> SCALE_UP (multi-step: ue_count 10.0 >= 6 (level 2 -> 3, max 4))
+[mano:osm] osm-urllc-up-26f88a94: osm vnf-scale scalable-echo-urllc echo_vnf --scaling-group echo-scale --scale-out (replicas 2 -> 3)
+[mano:osm] osm-urllc-up-26f88a94: OSM scale op converged, scalable-echo ready replicas 2 -> 3 in 7.7s
+[mmtc  ] ue=17.0 lat=1.226 loss=0.0 forecast_ok=True -> SCALE_UP (multi-step: ue_count 17.0 >= 10 (level 2 -> 3, max 4))
+[mano:osm] osm-mmtc-up-690df12d: osm vnf-scale scalable-echo-test echo_vnf --scaling-group echo-scale --scale-out (replicas 2 -> 3)
+[mano:osm] osm-mmtc-up-690df12d: OSM scale op converged, scalable-echo ready replicas 2 -> 3 in 7.8s
+[embb  ] ue=33.0 lat=0.797 loss=0.0 forecast_ok=True -> SCALE_UP (multi-step: ue_count 33.0 >= 30 (level 3 -> 4, max 4))
+[mano:osm] osm-embb-up-ccdef537: osm vnf-scale scalable-echo-embb echo_vnf --scaling-group echo-scale --scale-out (replicas 3 -> 4)
+[mano:osm] osm-embb-up-ccdef537: replicas did not reach 4 within 150s
+[urllc ] ue=10.0 lat=0.833 loss=0.0 forecast_ok=True -> SCALE_UP (multi-step: ue_count 10.0 >= 9 (level 3 -> 4, max 4))
+[mano:osm] osm-urllc-up-cc85b5d9: osm vnf-scale scalable-echo-urllc echo_vnf --scaling-group echo-scale --scale-out (replicas 3 -> 4)
+[mano:osm] osm-urllc-up-cc85b5d9: replicas did not reach 4 within 150s
+[mmtc  ] ue=17.0 lat=0.977 loss=0.0 forecast_ok=True -> SCALE_UP (multi-step: ue_count 17.0 >= 15 (level 3 -> 4, max 4))
+[mano:osm] osm-mmtc-up-81d01c99: osm vnf-scale scalable-echo-test echo_vnf --scaling-group echo-scale --scale-out (replicas 3 -> 4)
+[mano:osm] osm-mmtc-up-81d01c99: replicas did not reach 4 within 150s
+[embb  ] ue=33.0 lat=0.984 loss=0.0 forecast_ok=True -> SCALE_UP (multi-step: ue_count 33.0 >= 20 (level 2 -> 3, max 3))
+[mano:osm] osm-embb-up-b909ddb0: scale-out skipped, at max replicas (3)
+[urllc ] ue=10.0 lat=0.971 loss=0.0 forecast_ok=True -> SCALE_UP (multi-step: ue_count 10.0 >= 6 (level 2 -> 3, max 3))
+[mano:osm] osm-urllc-up-0b39a164: scale-out skipped, at max replicas (3)
+[mmtc  ] ue=17.0 lat=1.26 loss=0.0 forecast_ok=True -> SCALE_UP (multi-step: ue_count 17.0 >= 10 (level 2 -> 3, max 3))
+[mano:osm] osm-mmtc-up-1a164f5c: scale-out skipped, at max replicas (3)
+[embb  ] ue=3.0 lat=1.078 loss=0.0 forecast_ok=True -> SCALE_DOWN (multi-step: ue_count 3.0 low (level 3 -> 2))
+[mano:osm] osm-embb-down-0964c860: osm vnf-scale scalable-echo-embb echo_vnf --scaling-group echo-scale --scale-in (replicas 3 -> 2)
+[mano:osm] osm-embb-down-0964c860: OSM scale op converged, scalable-echo ready replicas 3 -> 2 in 7.7s
+[urllc ] ue=1.0 lat=1.14 loss=0.0 forecast_ok=True -> SCALE_DOWN (multi-step: ue_count 1.0 low (level 3 -> 2))
+[mano:osm] osm-urllc-down-43c8d674: osm vnf-scale scalable-echo-urllc echo_vnf --scaling-group echo-scale --scale-in (replicas 3 -> 2)
+[mano:osm] osm-urllc-down-43c8d674: OSM scale op converged, scalable-echo ready replicas 3 -> 2 in 12.8s
+[mmtc  ] ue=2.0 lat=1.104 loss=0.0 forecast_ok=True -> SCALE_DOWN (multi-step: ue_count 2.0 low (level 3 -> 2))
+[mano:osm] osm-mmtc-down-c52f4cd3: osm vnf-scale scalable-echo-test echo_vnf --scaling-group echo-scale --scale-in (replicas 3 -> 2)
+[mano:osm] osm-mmtc-down-c52f4cd3: OSM scale op converged, scalable-echo ready replicas 3 -> 2 in 7.7s
+[embb  ] ue=3.0 lat=0.925 loss=0.0 forecast_ok=True -> SCALE_DOWN (reactive: ue_count 3.0 <= down-threshold 6.0, reverting scale-up)
+[mano:osm] osm-embb-down-b43d2556: osm vnf-scale scalable-echo-embb echo_vnf --scaling-group echo-scale --scale-in (replicas 2 -> 1)
+[mano:osm] osm-embb-down-b43d2556: OSM scale op converged, scalable-echo ready replicas 2 -> 1 in 7.6s
+[urllc ] ue=1.0 lat=1.083 loss=0.0 forecast_ok=True -> SCALE_DOWN (reactive: ue_count 1.0 <= down-threshold 1.8, reverting scale-up)
+[mano:osm] osm-urllc-down-feb4cf94: osm vnf-scale scalable-echo-urllc echo_vnf --scaling-group echo-scale --scale-in (replicas 2 -> 1)
+[mano:osm] osm-urllc-down-feb4cf94: OSM scale op converged, scalable-echo ready replicas 2 -> 1 in 7.7s
+[mmtc  ] ue=2.0 lat=1.196 loss=0.0 forecast_ok=True -> SCALE_DOWN (reactive: ue_count 2.0 <= down-threshold 3.0, reverting scale-up)
+[mano:osm] osm-mmtc-down-8fa6435a: osm vnf-scale scalable-echo-test echo_vnf --scaling-group echo-scale --scale-in (replicas 2 -> 1)
+[mano:osm] osm-mmtc-down-8fa6435a: OSM scale op converged, scalable-echo ready replicas 2 -> 1 in 7.7s
