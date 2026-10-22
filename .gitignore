@@ -4,3 +4,4 @@ __pycache__/
 # PII anonymization salt -- NEVER commit this
 *pii_salt*
 .slice-testbed/
+scripts/provision_scale_ues_*.sql
