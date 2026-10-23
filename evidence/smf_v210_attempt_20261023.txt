@@ -1,0 +1,5 @@
+SMF v2.0.0 -> v2.1.0 attempt (mixed core: NRF v2.0.0, AMF v2.0.1, UPF v2.1.0/v2.2.0)
+Ramp 60/20/40 UEs on v2.1.0: SMF restarts 0 -> 0, but PDU sessions failed.
+Per-slice tunnels after ramp: eMBB 1 (of 60), URLLC 21 ok, mMTC 41 (40 ping fail).
+UE logs: repeated T3580 expiry, 13893x "PDU Session Establishment Reject [?]".
+Result: reverted to v2.0.0 (known segfault under load, exit 139).

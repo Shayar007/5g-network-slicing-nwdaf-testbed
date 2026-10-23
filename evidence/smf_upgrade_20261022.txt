@@ -1,0 +1,13 @@
+before: SMF image=v2.0.0 restarts=10
+deployment.apps/oai-smf image updated
+Waiting for deployment "oai-smf" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "oai-smf" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "oai-smf" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "oai-smf" rollout to finish: 0 of 1 updated replicas are available...
+deployment "oai-smf" successfully rolled out
+new pod: oai-smf-56b4f95669-254hv restarts=0
+-- errors in new SMF log
+-- UPF association
+[2026-10-22 10:59:04.363] [smf_n4 ] [info] Received N4 ASSOCIATION SETUP RESPONSE from an UPF
+[2026-10-22 10:59:04.363] [smf_n4 ] [info] Received N4 ASSOCIATION SETUP RESPONSE
+[2026-10-22 10:59:04.363] [smf_app] [debug] Found UPF config for pending PFCP association 10.42.0.251
