@@ -1,0 +1,2 @@
+Correction to smf_v210_attempt_*: the eMBB/mMTC data-path failures seen on v2.1.0 also occurred on v2.0.0,
+so they were not shown to be caused by v2.1.0. v2.1.0 was not demonstrated to be faulty or fixed.
