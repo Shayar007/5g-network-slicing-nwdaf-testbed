@@ -1,0 +1,24 @@
+[mmtc  ] ue=0.0 lat=0.0 loss=100.0 forecast_ok=True -> SCALE_DOWN (reactive: ue_count 0.0 <= down-threshold 3.0, reverting scale-up)
+[mano:osm] osm-mmtc-down-d625449b: osm vnf-scale scalable-echo-test echo_vnf --scaling-group echo-scale --scale-in (replicas 2 -> 1)
+[mano:osm] osm-mmtc-down-d625449b: OSM scale op converged, scalable-echo ready replicas 2 -> 1 in 5.0s
+[urllc ] ue=6.0 lat=0.694 loss=0.0 forecast_ok=True -> SCALE_UP (reactive: ue_count 6.0 >= threshold 3)
+[mano:osm] osm-urllc-up-59483abc: osm vnf-scale scalable-echo-urllc echo_vnf --scaling-group echo-scale --scale-out (replicas 1 -> 2)
+[mano:osm] osm-urllc-up-59483abc: OSM scale op converged, scalable-echo ready replicas 1 -> 2 in 7.3s
+[mmtc  ] ue=6.0 lat=1.449 loss=0.0 forecast_ok=True -> SCALE_UP (reactive: ue_count 6.0 >= threshold 5)
+[mano:osm] osm-mmtc-up-b66ff7fe: osm vnf-scale scalable-echo-test echo_vnf --scaling-group echo-scale --scale-out (replicas 1 -> 2)
+[mano:osm] osm-mmtc-up-b66ff7fe: OSM scale op converged, scalable-echo ready replicas 1 -> 2 in 7.2s
+[embb  ] ue=8.0 lat=1.232 loss=0.0 forecast_ok=True -> SCALE_UP (predictive: forecast [9.6, 10.8, 12.1] crosses threshold 10 before current count does)
+[mano:osm] osm-embb-up-f2c5e7fe: osm vnf-scale scalable-echo-embb echo_vnf --scaling-group echo-scale --scale-out (replicas 1 -> 2)
+[mano:osm] osm-embb-up-f2c5e7fe: OSM scale op converged, scalable-echo ready replicas 1 -> 2 in 7.2s
+[urllc ] ue=22.0 lat=0.756 loss=0.0 forecast_ok=True -> SCALE_UP (multi-step: ue_count 22.0 >= 6 (level 2 -> 3, max 3))
+[mano:osm] osm-urllc-up-76c28744: osm vnf-scale scalable-echo-urllc echo_vnf --scaling-group echo-scale --scale-out (replicas 2 -> 3)
+[mano:osm] osm-urllc-up-76c28744: OSM scale op converged, scalable-echo ready replicas 2 -> 3 in 4.2s
+[mmtc  ] ue=22.0 lat=1.435 loss=0.0 forecast_ok=True -> SCALE_UP (multi-step: ue_count 22.0 >= 10 (level 2 -> 3, max 3))
+[mano:osm] osm-mmtc-up-e371efe9: osm vnf-scale scalable-echo-test echo_vnf --scaling-group echo-scale --scale-out (replicas 2 -> 3)
+[mano:osm] osm-mmtc-up-e371efe9: OSM scale op converged, scalable-echo ready replicas 2 -> 3 in 7.4s
+[embb  ] ue=24.0 lat=1.018 loss=0.0 forecast_ok=True -> SCALE_UP (multi-step: ue_count 24.0 >= 20 (level 2 -> 3, max 3))
+[mano:osm] osm-embb-up-374f0d69: osm vnf-scale scalable-echo-embb echo_vnf --scaling-group echo-scale --scale-out (replicas 2 -> 3)
+[mano:osm] osm-embb-up-374f0d69: OSM scale op converged, scalable-echo ready replicas 2 -> 3 in 7.4s
+250 UEs (eMBB 100, URLLC 50, mMTC 100), SMF v2.0.0, slow ramp B=2 SLP=20, retry_missing.sh for 4 UEs.
+Tunnels 250/250. Gateway ping ok 240/250 (eMBB 98/100, URLLC 46/50, mMTC 96/100).
+SMF restarts during ramp: 3 (segfault, exit 139). Replica cap 3 (OSM max-instance-count).
