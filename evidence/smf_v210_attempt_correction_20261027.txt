@@ -1,0 +1,1 @@
+Final result: SMF v2.1.0 tested with the correct procedure (UPFs restarted first). No SMF crash, but no eMBB sessions were created and only 2 UPF associations formed (8 on v2.0.0). Rolled back to v2.0.0. v2.1.0 is not a fix for the segfault in this configuration.
