@@ -1,0 +1,9 @@
+2026-10-28 11:33:40 start dry_run=False caps={'embb': 3, 'urllc': 15, 'mmtc': 40}
+2026-10-28 11:33:40 [embb] ue=3 cap=3 streak=1/1
+2026-10-28 11:33:42 [embb] creating NS upf-auto-embb; SMF restarts before: 0
+2026-10-28 11:33:44 373d816f-fb55-4cb9-bc86-07f4ee76cbb1
+2026-10-28 11:34:16 [embb] NS upf-auto-embb state READY after 33.9s
+2026-10-28 11:34:41 [embb] pods in upf-auto-embb: osm-oai-upf-68c65dfbc4-56m5s   1/1   Running   0     54s | 
+2026-10-28 11:34:41 [embb] SMF restarts after: 0 (before: 0)
+2026-10-28 11:34:41 [urllc] ue=1 cap=15 streak=0/1
+2026-10-28 11:34:41 [mmtc] ue=2 cap=40 streak=0/1
