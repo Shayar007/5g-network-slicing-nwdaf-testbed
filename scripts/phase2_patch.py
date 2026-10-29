@@ -1,6 +1,6 @@
 import json, subprocess, sys
-def sh(*a, inp=None):
-    r = subprocess.run(a, capture_output=True, text=True, input=inp)
+def sh(*a):
+    r = subprocess.run(a, capture_output=True, text=True)
     if r.returncode: sys.exit(r.stderr)
     return r.stdout
 cur = sh("kubectl","get","cm","oai-5g-basic","-n","oai","-o","jsonpath={.data.config\\.yaml}")

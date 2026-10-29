@@ -132,7 +132,7 @@ smf:
             - dnn: oai
             - dnn: oai2
             - dnn: oai-auto
-    - host: osm-oai-upf.upf-auto-embb.svc.cluster.local
+    - host: osm-oai-upf.upf-auto-embb2.svc.cluster.local
       config:
         enable_usage_reporting: no
       upf_info:
