@@ -1,0 +1,50 @@
+== 1. create UPF upf-auto-embb3 via OSM (sst 1, sd FFFFFF, DNN oai-ovf-embb3, subnet 12.23.1.0/24)
+NS state: READY after 38s
+== 2. add the UPF to the SMF config (backup first)
+configmap/oai-5g-basic patched
+SMF config patched
+== 3. provision UE 001010000000603 on DNN oai-ovf-embb3 (12.23.1.10)
+== 4. clean restart: UEs stop, ALL UPFs first, then SMF
+tun left: 0
+deployment.apps/oai-upf restarted
+deployment.apps/oai-upf-auto-auto01 restarted
+deployment.apps/osm-oai-upf restarted
+deployment.apps/osm-oai-upf restarted
+deployment.apps/osm-oai-upf restarted
+Waiting for deployment "oai-upf" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "oai-upf" rollout to finish: 1 old replicas are pending termination...
+deployment "oai-upf" successfully rolled out
+deployment "oai-upf-auto-auto01" successfully rolled out
+deployment "osm-oai-upf" successfully rolled out
+deployment "osm-oai-upf" successfully rolled out
+Waiting for deployment "osm-oai-upf" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "osm-oai-upf" rollout to finish: 1 old replicas are pending termination...
+deployment "osm-oai-upf" successfully rolled out
+deployment.apps/oai-smf restarted
+Waiting for deployment "oai-smf" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "oai-smf" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "oai-smf" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "oai-smf" rollout to finish: 0 of 1 updated replicas are available...
+deployment "oai-smf" successfully rolled out
+associations: 14
+== 5. demo UEs (one at a time), registry, then the new UE
+22:19:46 batch done up to 1 | load 9.65 | avail 12064MB
+22:20:06 batch done up to 2 | load 8.66 | avail 12262MB
+22:20:26 batch done up to 3 | load 8.29 | avail 12076MB
+ramp done: eMBB=3 URLLC=1 mMTC=2
+registry rows: 5
+== 6. verify
+[2026-11-17 22:21:34.277] [app] [info] Connection setup for PDU session[1] is successful, TUN interface[uesimtun5, 12.23.1.10] is up.
+iface=[uesimtun5]
+3 packets transmitted, 3 received, 0% packet loss, time 2066ms
+3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+-- session on the new UPF:
+[2026-11-17 16:51:34.250] [upf_app] [info] Received N4_SESSION_ESTABLISHMENT_REQUEST seid 0xd 
+[2026-11-17 16:51:34.253] [upf_app] [info] Received N4_SESSION_MODIFICATION_REQUEST seid 0x1 
+12.1.1.35 fail
+12.2.1.60 ok
+12.3.1.20 ok
+12.3.1.21 ok
+12.1.1.37 ok
+12.23.1.10 ok
+SMF restarts: 1
