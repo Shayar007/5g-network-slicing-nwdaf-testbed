@@ -1,0 +1,46 @@
+== 1. stop UEs
+tun left: 0
+== 2. gNB -> AMF IP check
+gNB ok
+== 3. UPFs first (all four), then SMF
+deployment.apps/oai-upf restarted
+deployment.apps/oai-upf-auto-auto01 restarted
+deployment.apps/osm-oai-upf restarted
+deployment.apps/osm-oai-upf restarted
+Waiting for deployment "oai-upf" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "oai-upf" rollout to finish: 1 old replicas are pending termination...
+deployment "oai-upf" successfully rolled out
+deployment "oai-upf-auto-auto01" successfully rolled out
+deployment "osm-oai-upf" successfully rolled out
+deployment "osm-oai-upf" successfully rolled out
+deployment.apps/oai-smf restarted
+Waiting for deployment "oai-smf" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "oai-smf" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "oai-smf" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "oai-smf" rollout to finish: 0 of 1 updated replicas are available...
+deployment "oai-smf" successfully rolled out
+associations: 12
+== 4. demo UEs 3/1/2, registry, then UE 600
+15:18:46 batch done up to 1 | load 9.00 | avail 13018MB
+15:19:06 batch done up to 2 | load 9.34 | avail 13060MB
+15:19:26 batch done up to 3 | load 10.78 | avail 12825MB
+ramp done: eMBB=3 URLLC=1 mMTC=2
+registry rows: 6
+== 5. verify
+12.1.1.35 ok
+12.3.1.20 ok
+12.2.1.60 ok
+12.1.1.36 ok
+12.3.1.21 ok
+12.1.1.37 ok
+12.10.1.10 ok
+  eMBB  : avg=0.74ms   p95=0.77ms   loss=0.0%  reachable=3/3
+  mMTC  : avg=1.58ms   p95=2.32ms   loss=0.0%  reachable=2/2
+  URLLC : avg=0.93ms   p95=0.93ms   loss=0.0%  reachable=1/1
+[embb  ] ue=3.0 lat=0.932 loss=0.0 forecast_ok=True -> HOLD (ue_count 3.0 within band (6.0, 10))
+[urllc ] ue=1.0 lat=0.694 loss=0.0 forecast_ok=True -> HOLD (ue_count 1.0 within band (1.8, 3))
+[mmtc  ] ue=2.0 lat=0.827 loss=0.0 forecast_ok=True -> HOLD (ue_count 2.0 within band (3.0, 5))
+scalable-echo   1/1   1     1     32d
+scalable-echo   1/1   1     1     32d
+scalable-echo   1/1   1     1     33d
+SMF restarts: 0
