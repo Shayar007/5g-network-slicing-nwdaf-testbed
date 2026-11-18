@@ -1,0 +1,49 @@
+== 1. stop UEs
+tun left: 0
+== 2. gNB -> AMF IP check
+gNB ok
+== 3. UPFs first (all), then SMF
+deployment.apps/oai-upf restarted
+deployment.apps/oai-upf-auto-auto01 restarted
+deployment.apps/osm-oai-upf restarted
+deployment.apps/osm-oai-upf restarted
+deployment.apps/osm-oai-upf restarted
+Waiting for deployment "oai-upf" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "oai-upf" rollout to finish: 1 old replicas are pending termination...
+deployment "oai-upf" successfully rolled out
+deployment "oai-upf-auto-auto01" successfully rolled out
+deployment "osm-oai-upf" successfully rolled out
+deployment "osm-oai-upf" successfully rolled out
+deployment "osm-oai-upf" successfully rolled out
+deployment.apps/oai-smf restarted
+Waiting for deployment "oai-smf" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "oai-smf" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "oai-smf" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "oai-smf" rollout to finish: 0 of 1 updated replicas are available...
+deployment "oai-smf" successfully rolled out
+associations: 14
+== 4. demo UEs (one at a time), registry, then extra UEs
+10:08:09 batch done up to 1 | load 8.49 | avail 12004MB
+10:08:29 batch done up to 2 | load 7.62 | avail 11817MB
+10:08:49 batch done up to 3 | load 7.85 | avail 11709MB
+ramp done: eMBB=3 URLLC=1 mMTC=2
+registry rows: 6
+== 5. verify
+12.1.1.35 ok
+12.2.1.60 ok
+12.3.1.20 ok
+12.1.1.36 ok
+12.3.1.21 ok
+12.1.1.37 ok
+12.10.1.10 ok
+12.23.1.10 ok
+  eMBB  : avg=0.65ms   p95=0.88ms   loss=0.0%  reachable=3/3
+  URLLC : avg=0.61ms   p95=0.61ms   loss=0.0%  reachable=1/1
+  mMTC  : avg=0.54ms   p95=0.55ms   loss=0.0%  reachable=2/2
+[embb  ] ue=3.0 lat=0.606 loss=0.0 forecast_ok=True -> HOLD (ue_count 3.0 within band (6.0, 10))
+[urllc ] ue=1.0 lat=0.625 loss=0.0 forecast_ok=True -> HOLD (ue_count 1.0 within band (1.8, 3))
+[mmtc  ] ue=2.0 lat=0.762 loss=0.0 forecast_ok=True -> HOLD (ue_count 2.0 within band (3.0, 5))
+scalable-echo   1/1   1     1     32d
+scalable-echo   1/1   1     1     32d
+scalable-echo   1/1   1     1     33d
+SMF restarts: 0
