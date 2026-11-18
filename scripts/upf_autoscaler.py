@@ -14,7 +14,7 @@ CAP = {"embb": int(os.getenv("EMBB_UPF_CAP", "50")),
        "urllc": int(os.getenv("URLLC_UPF_CAP", "15")),
        "mmtc": int(os.getenv("MMTC_UPF_CAP", "40"))}
 # overflow UPF identity per slice: distinct S-NSSAI, DNN and subnet so nothing clashes with live slices
-OVF = {"embb": (5, "000005", "oai-ovf-embb", "12.10.1.0/24"),
+OVF = {"embb": (1, "FFFFFF", "oai-ovf-embb", "12.10.1.0/24"),
        "urllc": (6, "000006", "oai-ovf-urllc", "12.11.1.0/24"),
        "mmtc": (7, "000007", "oai-ovf-mmtc", "12.12.1.0/24")}
 

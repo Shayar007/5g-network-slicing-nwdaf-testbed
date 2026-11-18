@@ -23,3 +23,6 @@ file = valid syntax) and got deployed, disabling the controller with no
 crash/error. Root cause of the fix: ALWAYS verify wc -l + grep for known
 function names BEFORE applying to the cluster. See deploy.sh for the
 enforced version of this check.
+
+## Security note
+The UE keys and OPC values in this repository's history (and in the provisioning scripts) are lab test credentials for simulated UEs only. They are not used on real SIMs or networks.
