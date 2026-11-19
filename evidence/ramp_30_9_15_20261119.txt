@@ -1,0 +1,3 @@
+[urllc ] ue=9.0 lat=0.786 loss=0.0 forecast_ok=True -> SCALE_UP (multi-step: ue_count 9.0 >= 6 (level 2 -> 3, max 3))
+[mano:osm] osm-urllc-up-8d80472c: osm vnf-scale scalable-echo-urllc echo_vnf --scaling-group echo-scale --scale-out (replicas 2 -> 3)
+[mano:osm] osm-urllc-up-8d80472c: OSM scale op converged, scalable-echo ready replicas 2 -> 3 in 7.3s
